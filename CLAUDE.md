@@ -253,11 +253,9 @@ These rules apply to every commit in this repository. **No exceptions.**
 
 **Author identity:**
 - Git username: `CXLD10`
-- Git email: the GitHub no-reply email for the CXLD10 account
-  (`{numeric-id}+CXLD10@users.noreply.github.com`; find the numeric ID at
-  GitHub → Settings → Emails)
-- Configure locally: `git config user.name "CXLD10"` and
-  `git config user.email "{id}+CXLD10@users.noreply.github.com"`
+- Git email: `200384814+CXLD10@users.noreply.github.com`
+- Verify: `git config user.name` → `CXLD10`, `git config user.email` → `200384814+CXLD10@users.noreply.github.com`
+- Remote: `https://github.com/CXLD10/argus.git`
 
 **Never:**
 - Use any other author name or email address
