@@ -52,6 +52,9 @@ dmypy.json
 # Argus runtime state (never commit)
 # ──────────────────────────────────────────────────────────────────────────────
 
+# Local artifact cache (used by argus run in offline/dev mode)
+.argus/
+
 # Local database
 data/argus.db
 data/argus.db-shm

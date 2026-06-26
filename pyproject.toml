@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "argus"
+version = "0.1.0"
+description = "Environmental Intelligence Platform — observe, predict, assess, explain"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+]
+
+[project.scripts]
+argus = "argus.cli:app"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "responses>=0.25",
+]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",   # line length (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["argus"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+exclude = ["tests/"]
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "live: tests that make real network calls (deselected by default)",
+]
+filterwarnings = ["error::DeprecationWarning"]
