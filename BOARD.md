@@ -20,7 +20,7 @@ Detailed specs: [`docs/features/phase-0.md`](docs/features/phase-0.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-000 | Repo & tooling scaffold | TODO | — | start here |
+| F-000 | Repo & tooling scaffold | DONE | — | commit 850b852 |
 | F-001 | Config + AOI/target model & loader | TODO | — | dep F-000 |
 | F-002 | CDSE catalogue client (auth + search) | TODO | — | dep F-001 · creds via env |
 | F-003 | Scene acquisition + persistence | TODO | — | dep F-002 · prefer subset |
@@ -178,6 +178,19 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-000 (Session 4)
+
+- Did: Python package scaffold — pyproject.toml (hatchling, ruff, mypy, pytest), argus/__init__.py,
+  argus/cli.py (typer multi-command with @app.callback()), argus/core/__init__.py,
+  argus/domains/__init__.py, tests/test_smoke.py (5 tests), Makefile, .github/workflows/ci.yml.
+  Fixed typer[all] → typer (extra no longer exists in 0.26.x). Fixed unused pytest import.
+  Added @app.callback() to force multi-command mode in typer 0.26.x so `argus version` works.
+- State: All 5 smoke tests pass. ruff check/format clean. mypy clean (4 source files). DONE.
+- Git: main · 850b852
+- Quota: Zero.
+- Next: F-001 — Config + AOI/target model & loader (pydantic settings + config/settings.yaml loader)
+- Blockers: None for F-001. OQ-B still blocks F-040, OQ-D blocks F-030.
 
 ### 2026-06-27 — governance — deployment strategy + git init + repo finalization (Session 3)
 

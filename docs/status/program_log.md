@@ -4,6 +4,38 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 4 — F-000: Repo & Tooling Scaffold
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Short implementation session
+**Tasks:** F-000 complete
+
+### What happened
+
+- Created Python package skeleton: `argus/`, `argus/core/`, `argus/domains/`
+- `argus/__init__.py` — version string 0.1.0
+- `argus/cli.py` — typer app; `@app.callback()` forces multi-command mode in typer 0.26.x
+  (single `@app.command()` alone collapses to root in newer typer; callback fixes this)
+- `pyproject.toml` — hatchling build, ruff (E/W/F/I/UP/B/C4/SIM), mypy (warn_return_any),
+  pytest (offline-only default, `live` marker), `typer>=0.12` (removed non-existent `[all]` extra)
+- `Makefile` — install, lint, format, test, test-live, run, clean targets
+- `.github/workflows/ci.yml` — Python 3.11/3.12 matrix; ruff+mypy+pytest on push/PR to main
+- `tests/test_smoke.py` — 5 offline tests; all pass
+
+### Decisions made
+
+None requiring ADR. Fixed typer[all] → typer (upstream extra removed in 0.26.x).
+
+### Git
+
+Commit `850b852` — `feat(F-000): add repo and tooling scaffold`
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 3 — Repository Finalization, Deployment Strategy & Git Init
 
 **Agent:** Claude claude-sonnet-4-6
