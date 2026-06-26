@@ -1,0 +1,157 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+MANIFEST
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.coveralls.json
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# Profiling
+*.prof
+
+# Jupyter notebooks — checkpoints only
+.ipynb_checkpoints/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Argus runtime state (never commit)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Local database
+data/argus.db
+data/argus.db-shm
+data/argus.db-wal
+*.db
+*.sqlite
+*.sqlite3
+
+# Artifact store (downloaded imagery, rasters, series)
+data/artifacts/
+
+# Raw imagery / large rasters that should never be in git
+data/raw/
+*.tif
+*.tiff
+*.nc
+*.h5
+*.hdf5
+
+# Parquet / feather data files (except tiny fixtures)
+data/*.parquet
+data/*.feather
+
+# Ingestion cache
+.argus_cache/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Configuration with credentials (never commit)
+# ──────────────────────────────────────────────────────────────────────────────
+config/settings.local.yaml
+config/*.local.yaml
+config/*.secret.yaml
+.env
+.env.*
+!.env.example
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Node / frontend (Phase 10)
+# ──────────────────────────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.next/
+frontend/build/
+.pnp.cjs
+.pnp.loader.mjs
+*.tsbuildinfo
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.log.*
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Operating system
+# ──────────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Windows Alternate Data Stream markers (WSL artefact)
+*:Zone.Identifier
+
+# ──────────────────────────────────────────────────────────────────────────────
+# IDE / editor
+# ──────────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*~
+\#*\#
+.#*
+*.sublime-project
+*.sublime-workspace
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Misc
+# ──────────────────────────────────────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+.scratch/
+
+# Security: never commit private keys or certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer

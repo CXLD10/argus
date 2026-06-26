@@ -1,0 +1,69 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Line endings: LF everywhere (prevents Windows CRLF issues in WSL)
+# ──────────────────────────────────────────────────────────────────────────────
+* text=auto eol=lf
+
+# Source
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Web / frontend
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.vue text eol=lf
+*.svg text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.rst text eol=lf
+*.txt text eol=lf
+
+# Config
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+Makefile text eol=lf
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Binary files: no line-ending conversion, no diff
+# ──────────────────────────────────────────────────────────────────────────────
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.tif binary
+*.tiff binary
+*.nc binary
+*.h5 binary
+*.hdf5 binary
+*.parquet binary
+*.feather binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.whl binary
+*.pyc binary
+*.pyd binary
+*.so binary
+*.db binary
+*.sqlite binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

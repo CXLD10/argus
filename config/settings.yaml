@@ -1,0 +1,90 @@
+# Argus — Platform Settings Template
+#
+# Copy this file to config/settings.local.yaml and fill in credentials.
+# Never commit settings.local.yaml (it may contain secrets).
+# All values can be overridden by environment variables (ARGUS_<SECTION>_<KEY>).
+
+# ── Data sources ──────────────────────────────────────────────────────────────
+
+cdse:
+  # Copernicus Data Space Ecosystem credentials.
+  # Obtain from: https://dataspace.copernicus.eu/
+  # Override with: ARGUS_CDSE_USER, ARGUS_CDSE_PASSWORD
+  user: ""
+  password: ""
+  # Quota guard: stop acquisition when cumulative daily download exceeds this.
+  daily_quota_gb: 1.0
+
+open_meteo:
+  # Open-Meteo is free, no API key required.
+  # CC BY 4.0 attribution REQUIRED in all outputs.
+  # Override with: ARGUS_OPEN_METEO_DAILY_CALL_LIMIT
+  daily_call_limit: 10000
+  attribution: "Weather data by Open-Meteo (https://open-meteo.com/) — CC BY 4.0"
+
+cmems:
+  # Copernicus Marine Service credentials (free registration).
+  # Obtain from: https://marine.copernicus.eu/
+  # Override with: ARGUS_CMEMS_USER, ARGUS_CMEMS_PASSWORD
+  user: ""
+  password: ""
+
+# ── AI layer ──────────────────────────────────────────────────────────────────
+
+ai:
+  # Set ARGUS_AI_OFFLINE=true to disable all LLM calls and use templated fallback.
+  # Override with: ARGUS_AI_OFFLINE
+  offline: false
+  # Pinned model version — never use unversioned aliases.
+  # Update when OQ-D is resolved with specific model tier.
+  # Override with: ARGUS_AI_MODEL
+  model: "claude-haiku-4-5-20251001"
+  # Maximum tokens per request (controls cost).
+  max_tokens: 2048
+
+# ── Storage ───────────────────────────────────────────────────────────────────
+
+store:
+  # Path to the SQLite database file.
+  # Override with: ARGUS_STORE_DB_PATH
+  db_path: "data/argus.db"
+  # Path to the artifact directory (rasters, series, reports).
+  # Override with: ARGUS_STORE_ARTIFACT_DIR
+  artifact_dir: "data/artifacts"
+
+# ── Alerting ──────────────────────────────────────────────────────────────────
+
+alerts:
+  # Webhook URL for alert delivery (optional).
+  # Override with: ARGUS_ALERTS_WEBHOOK_URL
+  webhook_url: ""
+  # SMTP settings for email alerts (optional).
+  smtp_host: ""
+  smtp_port: 587
+  smtp_user: ""
+  smtp_password: ""
+  from_address: ""
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+logging:
+  # "json" for structured logs (production); "text" for human-readable (dev).
+  # Override with: ARGUS_LOGGING_FORMAT
+  format: "text"
+  # Override with: ARGUS_LOGGING_LEVEL
+  level: "INFO"
+
+# ── Prediction engine ─────────────────────────────────────────────────────────
+
+prediction:
+  anomaly_detector:
+    # Sigma threshold for flagging anomalies (configurable per water body in MonitorTarget.attrs).
+    default_alert_sigma: 2.5
+  water_quality_forecast:
+    # Forecast horizon in days.
+    horizon_days: 14
+  oil_trajectory:
+    # config/oil_types.yaml is the authoritative registry.
+    # oil_type must be specified explicitly per run — no default.
+    simulation_hours: 72
+    particle_count: 1000

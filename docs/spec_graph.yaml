@@ -1,0 +1,470 @@
+version: "1.0"
+generated: "2026-06-27"
+status: "current"
+description: "Argus specification graph — machine-readable node/edge representation"
+
+node_types:
+  - Goal           # Product goal (G1–G7)
+  - FR             # Functional requirement
+  - NFR            # Non-functional requirement
+  - ADR            # Architectural decision record
+  - Domain         # Observation domain (D1–D4)
+  - Predictor      # Tier A predictor
+  - AIFeature      # Tier B AI capability
+  - Feature        # Roadmap feature (F-000–F-056)
+  - Phase          # Development phase (PH-0–PH-11)
+  - Module         # Python module
+  - DataModel      # Entity in DATA_MODELS.md
+  - API            # API endpoint
+  - Standard       # TESTING.md, CODING.md, QUOTAS.md
+  - Milestone      # MVP etc.
+  - OpenQuestion   # OQ-A through OQ-F
+
+edge_types:
+  - implements     # A implements B (feature→requirement)
+  - depends_on     # A cannot start until B is DONE
+  - defines        # ADR defines a decision
+  - extends        # A adds capability to B
+  - references     # A references B for context
+  - tests          # A validates B
+  - owns           # Module owns a data model or file
+  - produces       # A produces B as output
+  - consumes       # A takes B as input
+  - validates      # A validates B against criteria
+  - supersedes     # A replaces B
+  - resolves       # A resolves open question B
+  - blocks         # A blocks B until A is resolved
+
+nodes:
+
+  # Goals
+  - id: G1
+    type: Goal
+    label: "Multi-domain observation"
+    status: active
+
+  - id: G2
+    type: Goal
+    label: "Prediction engine"
+    status: active
+
+  - id: G3
+    type: Goal
+    label: "Anomaly early-warning"
+    status: active
+
+  - id: G4
+    type: Goal
+    label: "AI layer (grounded)"
+    status: active
+
+  - id: G5
+    type: Goal
+    label: "Impact and alerting"
+    status: active
+
+  - id: G6
+    type: Goal
+    label: "Honesty by design"
+    status: active
+
+  - id: G7
+    type: Goal
+    label: "Zero budget"
+    status: active
+
+  # Functional Requirements
+  - id: FR-1
+    type: FR
+    label: "AOI and water body model"
+    status: active
+  - id: FR-2
+    type: FR
+    label: "Search and ingest per domain"
+    status: active
+  - id: FR-3
+    type: FR
+    label: "Persistent queryable store"
+    status: active
+  - id: FR-4
+    type: FR
+    label: "D1 oil detection"
+    status: active
+  - id: FR-5
+    type: FR
+    label: "D2 inland water quality"
+    status: active
+  - id: FR-6
+    type: FR
+    label: "D3 weather/hydro ingestion"
+    status: active
+  - id: FR-7
+    type: FR
+    label: "D4 choke point derivation"
+    status: active
+  - id: FR-8
+    type: FR
+    label: "Oil drift trajectory forecast"
+    status: active
+  - id: FR-9
+    type: FR
+    label: "Water quality forecast"
+    status: active
+  - id: FR-10
+    type: FR
+    label: "Anomaly detection vs baseline"
+    status: active
+  - id: FR-11
+    type: FR
+    label: "Flood risk and acid risk indices"
+    status: active
+  - id: FR-12
+    type: FR
+    label: "Prediction uncertainty + validation gate"
+    status: active
+  - id: FR-13
+    type: FR
+    label: "Grounded NL situation reports"
+    status: active
+  - id: FR-14
+    type: FR
+    label: "NL query over store"
+    status: active
+  - id: FR-15
+    type: FR
+    label: "Anomaly explanation advisory"
+    status: active
+  - id: FR-16
+    type: FR
+    label: "Impact assessment with ETA"
+    status: active
+  - id: FR-17
+    type: FR
+    label: "HTTP API"
+    status: active
+  - id: FR-18
+    type: FR
+    label: "Web map viewer"
+    status: active
+  - id: FR-19
+    type: FR
+    label: "Alert delivery and product export"
+    status: active
+  - id: FR-20
+    type: FR
+    label: "Automated polling and scheduling"
+    status: active
+
+  # NFRs
+  - id: NFR-1
+    type: NFR
+    label: "Zero recurring cost"
+    status: active
+  - id: NFR-2
+    type: NFR
+    label: "Runs in WSL on laptop"
+    status: active
+  - id: NFR-3
+    type: NFR
+    label: "Reproducibility (pinned IDs, fixed seeds)"
+    status: active
+  - id: NFR-4
+    type: NFR
+    label: "Domain modularity (additive plug-ins)"
+    status: active
+  - id: NFR-5
+    type: NFR
+    label: "Quota safety"
+    status: active
+  - id: NFR-6
+    type: NFR
+    label: "Observability (structured logs, run records)"
+    status: active
+  - id: NFR-7
+    type: NFR
+    label: "Licensing hygiene (copyleft isolation)"
+    status: active
+  - id: NFR-8
+    type: NFR
+    label: "Honesty invariant (measured/modeled/inferred)"
+    status: active
+  - id: NFR-9
+    type: NFR
+    label: "AI grounding (no invented values)"
+    status: active
+
+  # ADRs
+  - id: ADR-0001
+    type: ADR
+    label: "Vertical pipeline and staged architecture"
+    status: stub-reconstructed
+    file: "docs/adr/ADR-0001-vertical-and-pipeline.md"
+  - id: ADR-0002
+    type: ADR
+    label: "Data and simulation stack"
+    status: stub-reconstructed
+    file: "docs/adr/ADR-0002-data-and-simulation-stack.md"
+  - id: ADR-0003
+    type: ADR
+    label: "Water health platform and domains"
+    status: accepted
+    file: "docs/adr/ADR-0003-water-health-platform-and-domains.md"
+  - id: ADR-0004
+    type: ADR
+    label: "Prediction engine and AI layer"
+    status: accepted
+    file: "docs/adr/ADR-0004-prediction-and-ai-layer.md"
+  - id: ADR-0005
+    type: ADR
+    label: "MVP redefinition — full platform"
+    status: accepted
+    file: "docs/adr/ADR-0005-mvp-redefinition.md"
+  - id: ADR-0006
+    type: ADR
+    label: "Oil type configurability"
+    status: accepted
+    file: "docs/adr/ADR-0006-oil-type-configurability.md"
+
+  # Domains
+  - id: D1
+    type: Domain
+    label: "marine_oil"
+    file: "docs/domains/D1-marine-oil.md"
+    status: specced
+  - id: D2
+    type: Domain
+    label: "inland_wq"
+    file: "docs/domains/D2-inland-wq.md"
+    status: specced
+  - id: D3
+    type: Domain
+    label: "weather_hydro"
+    file: "docs/domains/D3-weather-hydro.md"
+    status: specced
+  - id: D4
+    type: Domain
+    label: "hydro_chokepoints"
+    file: "docs/domains/D4-choke-points.md"
+    status: specced
+
+  # Predictors
+  - id: PRED-OilTraj
+    type: Predictor
+    label: "OilTrajectory"
+    file: "docs/prediction/OilTrajectory.md"
+    status: specced
+  - id: PRED-WQForecast
+    type: Predictor
+    label: "WaterQualityForecast"
+    file: "docs/prediction/WaterQualityForecast.md"
+    status: specced
+  - id: PRED-Anomaly
+    type: Predictor
+    label: "AnomalyDetector"
+    file: "docs/prediction/AnomalyDetector.md"
+    status: specced
+  - id: PRED-FloodRisk
+    type: Predictor
+    label: "FloodRisk"
+    file: "docs/prediction/FloodRisk.md"
+    status: specced
+  - id: PRED-AcidRisk
+    type: Predictor
+    label: "AcidDepositionRisk"
+    file: "docs/prediction/AcidDepositionRisk.md"
+    status: specced
+
+  # AI Features
+  - id: AI-Report
+    type: AIFeature
+    label: "NL Situation Reports"
+    file: "docs/ai/ASSISTANT.md"
+    status: specced
+  - id: AI-Query
+    type: AIFeature
+    label: "NL Query"
+    file: "docs/ai/ASSISTANT.md"
+    status: specced
+  - id: AI-Explain
+    type: AIFeature
+    label: "Anomaly Explanation"
+    file: "docs/ai/ASSISTANT.md"
+    status: specced
+  - id: AI-AlertSummary
+    type: AIFeature
+    label: "Alert Summarization"
+    file: "docs/ai/ASSISTANT.md"
+    status: specced
+
+  # Data Models
+  - id: DM-AOI
+    type: DataModel
+    label: "AOI"
+    status: defined
+  - id: DM-MonitorTarget
+    type: DataModel
+    label: "MonitorTarget"
+    status: defined
+  - id: DM-Scene
+    type: DataModel
+    label: "Scene"
+    status: defined
+  - id: DM-AnalysisRun
+    type: DataModel
+    label: "AnalysisRun"
+    status: defined
+  - id: DM-Observation
+    type: DataModel
+    label: "Observation"
+    status: defined
+  - id: DM-WeatherSeries
+    type: DataModel
+    label: "WeatherSeries"
+    status: defined
+  - id: DM-ChokePoint
+    type: DataModel
+    label: "ChokePoint"
+    status: defined
+  - id: DM-Prediction
+    type: DataModel
+    label: "Prediction"
+    status: defined
+  - id: DM-SkillReport
+    type: DataModel
+    label: "SkillReport"
+    status: defined
+  - id: DM-ImpactAssessment
+    type: DataModel
+    label: "ImpactAssessment"
+    status: defined
+  - id: DM-Alert
+    type: DataModel
+    label: "Alert"
+    status: defined
+  - id: DM-AIReport
+    type: DataModel
+    label: "AIReport"
+    status: defined
+  - id: DM-AIQueryLog
+    type: DataModel
+    label: "AIQueryLog"
+    status: defined
+  - id: DM-EvalCase
+    type: DataModel
+    label: "EvalCase"
+    status: defined
+
+  # Milestones
+  - id: MIL-MVP
+    type: Milestone
+    label: "Full Platform MVP"
+    status: pending
+    definition: "docs/product/PRD.md §5; ADR-0005"
+
+  # Open Questions
+  - id: OQ-A
+    type: OpenQuestion
+    label: "Demo lead domain"
+    status: resolved
+    resolution: "ADR-0005 — full platform is the only demo"
+  - id: OQ-B
+    type: OpenQuestion
+    label: "Choke-point definition"
+    status: open
+  - id: OQ-C
+    type: OpenQuestion
+    label: "In-situ calibration data availability"
+    status: open
+  - id: OQ-D
+    type: OpenQuestion
+    label: "LLM model tier and monthly budget"
+    status: open
+  - id: OQ-E
+    type: OpenQuestion
+    label: "NL-query read-only for MVP"
+    status: open
+    default: "yes — read-only"
+  - id: OQ-F
+    type: OpenQuestion
+    label: "Oil type default for trajectory"
+    status: resolved
+    resolution: "ADR-0006 — no default; configurable registry"
+
+edges:
+  # Goals → Requirements
+  - {from: G1, to: FR-1, type: implements}
+  - {from: G1, to: FR-2, type: implements}
+  - {from: G1, to: FR-3, type: implements}
+  - {from: G1, to: FR-4, type: implements}
+  - {from: G1, to: FR-5, type: implements}
+  - {from: G1, to: FR-6, type: implements}
+  - {from: G1, to: FR-7, type: implements}
+  - {from: G2, to: FR-8, type: implements}
+  - {from: G2, to: FR-9, type: implements}
+  - {from: G2, to: FR-10, type: implements}
+  - {from: G2, to: FR-11, type: implements}
+  - {from: G2, to: FR-12, type: implements}
+  - {from: G3, to: FR-10, type: implements}
+  - {from: G4, to: FR-13, type: implements}
+  - {from: G4, to: FR-14, type: implements}
+  - {from: G4, to: FR-15, type: implements}
+  - {from: G5, to: FR-16, type: implements}
+  - {from: G5, to: FR-17, type: implements}
+  - {from: G5, to: FR-18, type: implements}
+  - {from: G5, to: FR-19, type: implements}
+  - {from: G6, to: NFR-8, type: defines}
+  - {from: G7, to: NFR-1, type: defines}
+
+  # ADR supersession
+  - {from: ADR-0003, to: ADR-0001, type: supersedes}
+  - {from: ADR-0005, to: "PRD-v1-milestones", type: supersedes}
+
+  # ADR resolutions
+  - {from: ADR-0005, to: OQ-A, type: resolves}
+  - {from: ADR-0006, to: OQ-F, type: resolves}
+
+  # OQ blocks
+  - {from: OQ-B, to: "F-040", type: blocks}
+  - {from: OQ-C, to: "F-026", type: blocks}
+  - {from: OQ-D, to: "F-030", type: blocks}
+
+  # Domain → DataModel
+  - {from: D1, to: DM-Observation, type: produces}
+  - {from: D1, to: DM-AnalysisRun, type: produces}
+  - {from: D2, to: DM-Observation, type: produces}
+  - {from: D2, to: DM-AnalysisRun, type: produces}
+  - {from: D3, to: DM-WeatherSeries, type: produces}
+  - {from: D4, to: DM-ChokePoint, type: produces}
+
+  # Predictor → DataModel
+  - {from: PRED-OilTraj, to: DM-Prediction, type: produces}
+  - {from: PRED-OilTraj, to: DM-SkillReport, type: validates}
+  - {from: PRED-WQForecast, to: DM-Prediction, type: produces}
+  - {from: PRED-WQForecast, to: DM-SkillReport, type: validates}
+  - {from: PRED-Anomaly, to: DM-Prediction, type: produces}
+  - {from: PRED-Anomaly, to: DM-SkillReport, type: validates}
+  - {from: PRED-FloodRisk, to: DM-Prediction, type: produces}
+  - {from: PRED-FloodRisk, to: DM-SkillReport, type: validates}
+  - {from: PRED-AcidRisk, to: DM-Prediction, type: produces}
+  - {from: PRED-AcidRisk, to: DM-SkillReport, type: validates}
+
+  # Predictor inputs
+  - {from: DM-Observation, to: PRED-OilTraj, type: consumes}
+  - {from: DM-WeatherSeries, to: PRED-OilTraj, type: consumes}
+  - {from: DM-Observation, to: PRED-WQForecast, type: consumes}
+  - {from: DM-WeatherSeries, to: PRED-WQForecast, type: consumes}
+  - {from: DM-Observation, to: PRED-Anomaly, type: consumes}
+  - {from: DM-WeatherSeries, to: PRED-FloodRisk, type: consumes}
+  - {from: DM-ChokePoint, to: PRED-FloodRisk, type: consumes}
+  - {from: DM-WeatherSeries, to: PRED-AcidRisk, type: consumes}
+
+  # AI → DataModel
+  - {from: DM-Observation, to: AI-Report, type: consumes}
+  - {from: DM-Prediction, to: AI-Report, type: consumes}
+  - {from: DM-ImpactAssessment, to: AI-Report, type: consumes}
+  - {from: AI-Report, to: DM-AIReport, type: produces}
+  - {from: AI-Query, to: DM-AIQueryLog, type: produces}
+
+  # Milestone
+  - {from: MIL-MVP, to: "PH-11", type: depends_on}
+  - {from: ADR-0005, to: MIL-MVP, type: defines}

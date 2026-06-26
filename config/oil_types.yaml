@@ -1,0 +1,39 @@
+# Oil type registry — Argus (ADR-0006)
+#
+# No default oil type exists. The oil_type field is REQUIRED when running OilTrajectory.
+# Add entries here to make new types available. Never hardcode an oil type in code.
+#
+# Fields:
+#   id:             internal identifier (used in EvalCase.oil_type, CLI --oil-type flag)
+#   name:           human-readable display name
+#   openoil_name:   exact string passed to OpenOil (must match OpenOil's oil name registry)
+#   viscosity_est:  rough viscosity category for operator reference (not used computationally)
+#   validated:      whether this entry has been cross-checked against OpenOil's live registry
+#
+# Validation status: entries marked validated=false have not been confirmed against
+# the OpenOil oil database. Confirm openoil_name before use in a real simulation.
+
+oil_types:
+  - id: crude_medium
+    name: "Medium crude oil"
+    openoil_name: "GENERIC CRUDE"
+    viscosity_est: "medium"
+    validated: false
+
+  - id: diesel
+    name: "Marine diesel / gas oil"
+    openoil_name: "DIESEL"
+    viscosity_est: "low"
+    validated: false
+
+  - id: bunker_c
+    name: "Bunker C / heavy fuel oil"
+    openoil_name: "BUNKER C"
+    viscosity_est: "high"
+    validated: false
+
+  - id: condensate
+    name: "Gas condensate / light petroleum"
+    openoil_name: "CONDENSATE"
+    viscosity_est: "very_low"
+    validated: false
