@@ -1,0 +1,16 @@
+# Reference Lake — synthetic water body for testing and development
+id: reference_lake
+name: "Reference Lake (Synthetic)"
+aoi_id: reference_region
+domains:
+  - inland_wq
+
+# Calibration state: "uncalibrated" means relative trend only (absolute concentrations not reported).
+# Set to "calibrated" only after providing in-situ reference data (OQ-C).
+calibration_state: uncalibrated
+
+# Trophic classification (informational — not used in processing)
+trophic_class: mesotrophic
+
+# Approximate area (computed at load time from geometry — stored here for reference only)
+area_ha_approx: 11.0

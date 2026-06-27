@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "id": "reference_lake",
+    "name": "Reference Lake (Synthetic)",
+    "aoi_id": "reference_region",
+    "domains": ["inland_wq"]
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[
+      [-60.502, 10.499],
+      [-60.499, 10.499],
+      [-60.499, 10.502],
+      [-60.502, 10.502],
+      [-60.502, 10.499]
+    ]]
+  }
+}
