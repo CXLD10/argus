@@ -1,0 +1,13 @@
+# Development profile overrides (ARGUS_PROFILE=dev)
+# Loaded on top of settings.yaml. Never commit credentials here.
+
+logging:
+  level: DEBUG
+  format: text
+
+ai:
+  offline: true
+
+store:
+  db_path: "data/argus_dev.db"
+  artifact_dir: "data/artifacts_dev"

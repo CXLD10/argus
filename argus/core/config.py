@@ -1,4 +1,12 @@
-"""Argus configuration: load settings.yaml + environment variable overrides."""
+"""Argus configuration: load settings.yaml + environment variable overrides.
+
+Profile loading: set ARGUS_PROFILE=<name> to load config/settings.<name>.yaml on
+top of the base settings.yaml. Profile values override base values; ARGUS_* env
+vars override both.
+
+  ARGUS_PROFILE=test  → loads config/settings.test.yaml after base
+  ARGUS_PROFILE=dev   → loads config/settings.dev.yaml after base
+"""
 
 from __future__ import annotations
 
@@ -7,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from argus.core.errors import ConfigError  # noqa: E402 — re-export for backward compat
 
@@ -118,17 +126,51 @@ def _apply_env_overrides(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Merge override into base one level deep (section → field)."""
+    result = dict(base)
+    for key, val in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(val, dict):
+            result[key] = {**result[key], **val}
+        else:
+            result[key] = val
+    return result
+
+
+def _load_yaml(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    with path.open() as fh:
+        loaded = yaml.safe_load(fh)
+    return loaded if isinstance(loaded, dict) else {}
+
+
 def load_settings(path: Path | None = None) -> Settings:
-    """Load settings from a YAML file, then apply ARGUS_* env var overrides."""
+    """Load settings from a YAML file, apply profile overrides, then apply ARGUS_* env vars.
+
+    Resolution order (later wins):
+    1. config/settings.yaml (base)
+    2. config/settings.<ARGUS_PROFILE>.yaml (profile override, if ARGUS_PROFILE set)
+    3. ARGUS_* environment variables
+
+    Raises:
+        ConfigError: if the resulting config fails Pydantic validation (invalid type/value).
+    """
     settings_path = path or _DEFAULT_SETTINGS_PATH
-    data: dict[str, Any] = {}
-    if settings_path.exists():
-        with settings_path.open() as fh:
-            loaded = yaml.safe_load(fh)
-            if isinstance(loaded, dict):
-                data = loaded
+    data = _load_yaml(settings_path)
+
+    profile = os.environ.get("ARGUS_PROFILE")
+    if profile:
+        profile_path = settings_path.parent / f"settings.{profile}.yaml"
+        profile_data = _load_yaml(profile_path)
+        if profile_data:
+            data = _deep_merge(data, profile_data)
+
     data = _apply_env_overrides(data)
-    return Settings.model_validate(data)
+    try:
+        return Settings.model_validate(data)
+    except ValidationError as exc:
+        raise ConfigError(f"Invalid configuration: {exc}") from exc
 
 
 def require_cdse_credentials(settings: Settings) -> None:

@@ -1,0 +1,14 @@
+# Test profile overrides (ARGUS_PROFILE=test)
+# Loaded on top of settings.yaml when running pytest with ARGUS_PROFILE=test.
+# Never commit credentials here.
+
+logging:
+  level: WARNING
+  format: text
+
+ai:
+  offline: true
+
+store:
+  db_path: "/tmp/argus_test.db"
+  artifact_dir: "/tmp/argus_test_artifacts"
