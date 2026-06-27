@@ -5,7 +5,19 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# Registered obs_type values — any new domain must extend this set.
+VALID_OBS_TYPES: frozenset[str] = frozenset(
+    {
+        "oil_slick",
+        "chlorophyll_a",
+        "turbidity",
+        "cdom",
+        "surface_temp",
+        "inundation",
+    }
+)
 
 
 class AOI(BaseModel):
@@ -91,19 +103,36 @@ class Observation(BaseModel):
 
     INV-3: every Observation carries evidence_class ∈ {measured, modeled, inferred}.
     SAR dark-spot detections → evidence_class = "measured".
+    Schema is frozen at v2.0; any change requires a store migration.
     """
 
     id: str
     analysis_run_id: str
     scene_id: str
-    obs_type: str  # e.g. "oil_slick", "chlorophyll_a"
+    obs_type: str  # validated against VALID_OBS_TYPES
     evidence_class: Literal["measured", "modeled", "inferred"]
     geometry: dict[str, Any]  # GeoJSON geometry
     area_km2: float
     confidence: float  # 0–1
     status: Literal["candidate", "confirmed", "dismissed"] = "candidate"
+    # Status transition timestamp — set when status moves from "candidate".
+    status_updated_at: datetime | None = None
+    # Feature vector (shape/contrast/spectral) — mirrors DATA_MODELS §Observation.features.
+    features: dict[str, Any] | None = None
+    # Optional DATA_MODELS fields (populated by domain-aware consumers).
+    domain: str | None = None
+    target_id: str | None = None
+    value: float | None = None
+    unit: str | None = None
     attrs: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @field_validator("obs_type")
+    @classmethod
+    def _check_obs_type(cls, v: str) -> str:
+        if v not in VALID_OBS_TYPES:
+            raise ValueError(f"obs_type {v!r} not in registered types: {sorted(VALID_OBS_TYPES)}")
+        return v
 
 
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:

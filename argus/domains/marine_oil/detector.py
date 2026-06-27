@@ -125,7 +125,8 @@ def _component_to_observation(
         area_km2=round(float(area_km2), 4),
         confidence=round(confidence, 4),
         status="candidate",
-        attrs={"features": feats},
+        features=feats,
+        attrs={"features": feats},  # keep for backward compat
     )
 
 

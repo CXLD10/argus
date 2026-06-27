@@ -7,6 +7,7 @@ from F-007. Updates Observation.confidence and Observation.status (INV-8: seed=4
 from __future__ import annotations
 
 import pickle
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -48,10 +49,19 @@ class OilClassifier:
         x = _build_feature_matrix(observations)
         probs: np.ndarray = self._model.predict_proba(x)[:, 1]
 
+        now = datetime.now(UTC)
         result: list[Observation] = []
         for obs, prob in zip(observations, probs.tolist(), strict=True):
             status: str = "confirmed" if prob >= self.threshold else "dismissed"
-            result.append(obs.model_copy(update={"confidence": round(prob, 4), "status": status}))
+            result.append(
+                obs.model_copy(
+                    update={
+                        "confidence": round(prob, 4),
+                        "status": status,
+                        "status_updated_at": now,
+                    }
+                )
+            )
         return result
 
 
@@ -89,7 +99,10 @@ def train_classifier(
 def _build_feature_matrix(observations: list[Observation]) -> np.ndarray:
     return np.array(
         [
-            [float(obs.attrs.get("features", {}).get(k, 0.0)) for k in _FEATURE_ORDER]
+            [
+                float((obs.features or obs.attrs.get("features", {})).get(k, 0.0))
+                for k in _FEATURE_ORDER
+            ]
             for obs in observations
         ]
     )

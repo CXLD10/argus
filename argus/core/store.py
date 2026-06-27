@@ -6,6 +6,7 @@ No other module may import sqlite3 directly.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 from datetime import UTC, datetime
@@ -74,10 +75,27 @@ class Store:
                     area_km2         REAL NOT NULL,
                     confidence       REAL NOT NULL,
                     status           TEXT NOT NULL DEFAULT 'candidate',
+                    status_updated_at TEXT,
+                    features         TEXT,
+                    domain           TEXT,
+                    target_id        TEXT,
+                    value            REAL,
+                    unit             TEXT,
                     attrs            TEXT NOT NULL DEFAULT '{}',
                     created_at       TEXT NOT NULL
                 )
             """)
+            # Idempotent column additions for existing DBs.
+            for _stmt in (
+                "ALTER TABLE observations ADD COLUMN status_updated_at TEXT",
+                "ALTER TABLE observations ADD COLUMN features TEXT",
+                "ALTER TABLE observations ADD COLUMN domain TEXT",
+                "ALTER TABLE observations ADD COLUMN target_id TEXT",
+                "ALTER TABLE observations ADD COLUMN value REAL",
+                "ALTER TABLE observations ADD COLUMN unit TEXT",
+            ):
+                with contextlib.suppress(sqlite3.OperationalError):
+                    conn.execute(_stmt)
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -157,8 +175,9 @@ class Store:
                 """
                 INSERT OR REPLACE INTO observations
                     (id, analysis_run_id, scene_id, obs_type, evidence_class,
-                     geometry, area_km2, confidence, status, attrs, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     geometry, area_km2, confidence, status, status_updated_at,
+                     features, domain, target_id, value, unit, attrs, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     obs.id,
@@ -170,6 +189,12 @@ class Store:
                     obs.area_km2,
                     obs.confidence,
                     obs.status,
+                    obs.status_updated_at.isoformat() if obs.status_updated_at else None,
+                    json.dumps(obs.features) if obs.features is not None else None,
+                    obs.domain,
+                    obs.target_id,
+                    obs.value,
+                    obs.unit,
                     json.dumps(obs.attrs),
                     obs.created_at.isoformat(),
                 ),
@@ -186,6 +211,21 @@ class Store:
                 "SELECT * FROM observations WHERE analysis_run_id = ?", (run_id,)
             ).fetchall()
         return [_row_to_obs(r) for r in rows]
+
+    def transition_observation_status(
+        self,
+        obs_id: str,
+        new_status: str,
+        *,
+        updated_at: datetime | None = None,
+    ) -> None:
+        """Move an Observation from candidate to confirmed or dismissed, recording the timestamp."""
+        ts = (updated_at or datetime.now(UTC)).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE observations SET status = ?, status_updated_at = ? WHERE id = ?",
+                (new_status, ts, obs_id),
+            )
 
     # ── SkillReport CRUD (scaffold — gating UI is F-029) ─────────────────────
 
@@ -270,16 +310,29 @@ def _row_to_run(row: sqlite3.Row) -> AnalysisRun:
 
 
 def _row_to_obs(row: sqlite3.Row) -> Observation:
+    row_dict = dict(row)
     return Observation(
-        id=row["id"],
-        analysis_run_id=row["analysis_run_id"],
-        scene_id=row["scene_id"],
-        obs_type=row["obs_type"],
-        evidence_class=row["evidence_class"],
-        geometry=json.loads(row["geometry"]),
-        area_km2=row["area_km2"],
-        confidence=row["confidence"],
-        status=row["status"],
-        attrs=json.loads(row["attrs"]),
-        created_at=datetime.fromisoformat(row["created_at"]),
+        id=row_dict["id"],
+        analysis_run_id=row_dict["analysis_run_id"],
+        scene_id=row_dict["scene_id"],
+        obs_type=row_dict["obs_type"],
+        evidence_class=row_dict["evidence_class"],
+        geometry=json.loads(row_dict["geometry"]),
+        area_km2=row_dict["area_km2"],
+        confidence=row_dict["confidence"],
+        status=row_dict["status"],
+        status_updated_at=(
+            datetime.fromisoformat(row_dict["status_updated_at"])
+            if row_dict.get("status_updated_at")
+            else None
+        ),
+        features=(
+            json.loads(row_dict["features"]) if row_dict.get("features") is not None else None
+        ),
+        domain=row_dict.get("domain"),
+        target_id=row_dict.get("target_id"),
+        value=row_dict.get("value"),
+        unit=row_dict.get("unit"),
+        attrs=json.loads(row_dict["attrs"]),
+        created_at=datetime.fromisoformat(row_dict["created_at"]),
     )
