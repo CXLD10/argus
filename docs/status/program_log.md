@@ -4,6 +4,77 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 5 — F-014–F-017: Impact Assessment, API, Web Viewer, Alerts — CP-1 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation of Session 5 (high-velocity mode)
+**Tasks:** F-014, F-015, F-016, F-017 complete — Phase 3 complete — CP-1 closed
+
+### What happened
+
+**F-014 — Exposure layers + impact + ETA**
+- `argus/core/models.py` — added `ExposureLayer` (id, name, layer_type, geometry, attrs) and
+  `ImpactAssessment` (id, prediction_id, exposure_layer_id, valid_at, eta_hours, metrics).
+- `argus/core/store.py` — `exposure_layers` + `impact_assessments` tables + CRUD methods (INV-6).
+- `argus/impact/assessor.py` — `load_exposure_layer()` (reads GeoJSON Feature); `assess_impact()`
+  sorts ForecastFrames by valid_at, finds first intersecting frame per exposure layer (shapely),
+  computes timezone-aware eta_hours. `_geom_length_km()` handles all shapely geometry types
+  (including GeometryCollections from Polygon∩LineString) via `.length × 111.19`. `_geom_area_km2()`
+  uses latitude-corrected area formula.
+- `data/static/exposure/coastline_tobago.geojson` + `mpas_tobago.geojson` — test fixtures.
+- `tests/test_impact_assessor.py` — 22 tests.
+
+**F-015 — FastAPI service**
+- `argus/api/app.py` — `create_app(db_path, config_dir)` factory with StaticFiles mount and
+  FileResponse index at `/`. Routers mounted at `/aois/*`.
+- `argus/api/schemas.py` — Pydantic v2 schemas; `_attribution` via `Field(alias=...)` +
+  `populate_by_name=True` + `response_model_by_alias=True` (Pydantic v2 leading-underscore fix).
+- Routers: `aoi.py`, `observations.py`, `predictions.py`, `impact.py`.
+- `argus/cli.py` — `argus serve` command using uvicorn.
+- deps: `fastapi>=0.111`, `uvicorn[standard]>=0.30`, `httpx>=0.27`. `mypy` moved to dev deps.
+- `tests/test_api.py` — 50 tests covering all endpoints, alias serialization, 404s, schema.
+
+**F-016 — Web viewer**
+- `argus/api/static/index.html` + `app.js` — Leaflet map (CDN, no bundler); `bootstrap()` fetches
+  `/aois`, parallel fetches obs/predictions/impact; polygon observations colored by confidence;
+  prediction heatmap with opacity ramp; ETA sidebar cards. Verified test uses `/static/app.js`.
+
+**F-017 — Alert delivery + product export**
+- `argus/alert/delivery.py` — `AlertChannel` (webhook | email), `Alert` (lifecycle: pending → sent |
+  failed), `load_channels()` (YAML, graceful [] on absent file), `_send_webhook()` (POST via
+  `requests`, `raise_for_status()`), `_send_email()` (smtplib.SMTP, optional login), `send_alert()`
+  (no-op if channels=[], catches all exceptions per channel → "failed").
+- `config/alert_channels.yaml` — template with `channels: []` + commented examples.
+- `argus/export/products.py` — `export_metadata()` (JSON with run metadata, observations,
+  optional prediction/impact sections); `export_products()` gains `prediction`/`impact` kwargs
+  and returns a `"metadata"` key alongside `"geojson"` and `"png"`.
+- `tests/test_alert_delivery.py` — 30 tests (Alert model, load_channels, no-op, webhook with
+  `responses` library mock, email with `unittest.mock.patch("smtplib.SMTP")`, export_metadata,
+  export_products metadata key).
+- Updated `tests/test_export.py` — extended expected artifact key set to include `"metadata"`.
+
+### Phase 3 definition of done — CP-1
+
+- [x] F-014 (exposure + impact) — commit 2c851ae
+- [x] F-015 (FastAPI service) — commit 38000bd
+- [x] F-016 (web viewer) — commit af20fa3
+- [x] F-017 (alert + export) — commit 792a3c6
+- [x] All Phase 3 acceptance criteria met
+
+### Git
+
+Commits: `2c851ae`, `38000bd`, `af20fa3`, `792a3c6`
+
+### Test results
+
+371/371 offline tests pass, 2 live deselected. `ruff check` clean. `mypy` clean (49 source files).
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 5 — F-013: ForecastFrame Evaluator & Trajectory Skill Metric
 
 **Agent:** Claude claude-sonnet-4-6

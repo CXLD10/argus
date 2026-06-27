@@ -55,10 +55,10 @@ Detailed specs: [`docs/features/phase-3.md`](docs/features/phase-3.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-014 | Exposure layers + impact + ETA | TODO | — | dep F-013 |
-| F-015 | FastAPI service | TODO | — | dep F-014 |
-| F-016 | Web viewer | TODO | — | dep F-015 |
-| F-017 | Alert delivery + product export — **CP-1 close** | TODO | — | dep F-016 |
+| F-014 | Exposure layers + impact + ETA | DONE | — | commit 2c851ae |
+| F-015 | FastAPI service | DONE | — | commit 38000bd |
+| F-016 | Web viewer | DONE | — | commit af20fa3 |
+| F-017 | Alert delivery + product export — **CP-1 close** | DONE | — | commit 792a3c6 |
 
 ## Phase 3.5 — Foundation Hardening *(P0)*
 
@@ -178,6 +178,34 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-014, F-015, F-016, F-017 (Session 5 continued) — CP-1 COMPLETE
+
+- Did:
+  F-014: `argus/impact/assessor.py` — `load_exposure_layer()` (GeoJSON Feature→ExposureLayer),
+  `assess_impact()` (per-layer first-intersection ETA, timezone-aware eta_hours, coastline
+  length via shapely .length×111.19, MPA area via .area×111.19²×cos(lat)). `argus/core/models.py` —
+  `ExposureLayer` + `ImpactAssessment`. `argus/core/store.py` — `exposure_layers` + `impact_assessments`
+  tables + CRUD (INV-6). `data/static/exposure/coastline_tobago.geojson` + `mpas_tobago.geojson`.
+  `tests/test_impact_assessor.py` (22 tests).
+  F-015: `argus/api/` package — `create_app()` factory (FastAPI, StaticFiles, FileResponse index,
+  `/health`). Routers: `aoi.py`, `observations.py`, `predictions.py`, `impact.py` (all using
+  `request.app.state.db_path`). `argus/api/schemas.py` — Pydantic v2 response models with
+  `_attribution` alias (Field+alias+populate_by_name+response_model_by_alias). `argus/cli.py` —
+  `argus serve` command. `fastapi>=0.111`, `uvicorn>=0.30`, `httpx>=0.27` deps added.
+  `tests/test_api.py` (50 tests).
+  F-016: `argus/api/static/index.html` + `app.js` (Leaflet map, observations polygon layer,
+  prediction heatmap, ETA sidebar cards, parallel fetch for obs/predictions/impact).
+  F-017: `argus/alert/__init__.py` + `argus/alert/delivery.py` — `AlertChannel`, `Alert`,
+  `load_channels()`, `_send_webhook()`, `_send_email()`, `send_alert()` (graceful no-op for
+  empty channels). `config/alert_channels.yaml` (template). `argus/export/products.py` —
+  `export_metadata()` + updated `export_products()` (now returns "metadata" key).
+  `tests/test_alert_delivery.py` (30 tests).
+- State: 371/371 offline tests pass. ruff clean. mypy clean (49 source files). All CP-1 ACs met.
+- Git: main · F-014 2c851ae · F-015 38000bd · F-016 af20fa3 · F-017 792a3c6
+- Quota: Zero.
+- Next: F-018 — API contract finalization (Phase 3.5)
+- Blockers: None.
 
 ### 2026-06-27 — implementation — F-013 (Session 5 continued)
 
