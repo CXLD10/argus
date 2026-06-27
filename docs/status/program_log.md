@@ -4,6 +4,54 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 6 — F-027–F-029: WQ Prediction Engine — PHASE 5 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation session (high-velocity mode)
+**Tasks:** F-027, F-028, F-029 complete — Phase 5 (Prediction Engine: Water Quality) complete
+
+### What happened
+
+**F-027 — Seasonal Baseline + AnomalyDetector**
+- `argus/predict/anomaly_detector/baseline.py`: `SeasonalBaseline` dataclass (per-ISO-week
+  mean/std from history). `build_baseline()` bins Observations by `created_at.isocalendar().week`.
+  Single-week observations get std=0.0 (insufficient to compute z-score).
+- `argus/predict/anomaly_detector/detector.py`: `AnomalyDetector` (fit/predict/validate).
+  `predict()` returns Prediction(kind='anomaly', uncertainty={"sigma": z_score}, INV-9).
+  `validate()` computes false_alarm_rate; `passed_gate = rate < 10%`.
+- `Store.get_predictions_by_kind()` for anomaly query.
+- `tests/test_anomaly_detector.py` (21 tests). All ACs verified.
+- Commit: b6399f6
+
+**F-028 — WaterQualityForecast GBM with bootstrapped CI**
+- `argus/predict/wq_forecast/drivers.py`: `fetch_weather_features()` (Open-Meteo ERA5,
+  precip_7d + temp_7d). Used only in live mode; tests bypass it via synthetic data.
+- `argus/predict/wq_forecast/trainer.py`: `build_feature_vector()` (7 features: chl lags,
+  sin/cos doy, weather). `build_training_matrix()` (lag-aligned from Observation history).
+  `train_gbm()` (GradientBoostingRegressor, n_estimators=50).
+- `argus/predict/wq_forecast/model.py`: `WQForecaster.from_history()` (80/20 holdout RMSE).
+  `forecast()` uses bootstrap median as point estimate → guarantees ci_low ≤ value ≤ ci_high.
+  Prediction uncertainty={"ci_90_low","ci_90_high","rmse"} per AC3/INV-9. `save/load` via pickle.
+- `tests/test_wq_forecast.py` (24 tests). All ACs verified.
+- Commit: a203616
+
+**F-029 — Predictor Interface + Skill Gate**
+- `argus/eval/skill_gate.py`: `check_gate(predictor_id, store)` checks most recent SkillReport
+  passed_gate. `gate_predictions(preds, store)` filters by gate with per-call cache.
+- `argus/core/store.py`: `passed_gate INTEGER DEFAULT 0` column added to skill_reports via
+  idempotent ALTER TABLE. `save_skill_report()` updated to accept `passed_gate=bool`.
+  `get_skill_reports_by_predictor()` (sorted ascending).
+- `argus/api/routers/waterbody.py`: `GET /waterbody/{id}/forecasts` (gated only);
+  `GET /waterbody/{id}/raw_predictions` (unfiltered). Registered in `create_app()`.
+- `tests/test_skill_gate.py` (18 tests). All ACs verified.
+- Commit: 422e0a9
+
+### Outcome
+641/641 offline tests pass. ruff clean. mypy clean. Phase 5 DoD complete.
+Next: F-030 (Phase 6) — AI Assistant scaffolding + grounding/citation guards.
+
+---
+
 ## 2026-06-27 — Session 6 — F-024–F-026: Inland Water Quality Domain — PHASE 4 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6

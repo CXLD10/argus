@@ -89,9 +89,9 @@ Detailed specs: [`docs/features/phase-5.md`](docs/features/phase-5.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-027 | Seasonal baseline + AnomalyDetector | TODO | — | dep F-026 |
-| F-028 | WaterQualityForecast (+ CI) | TODO | — | dep F-026 · Open-Meteo drivers |
-| F-029 | Predictor interface + validation/skill gate | TODO | — | dep F-028 · beat persistence |
+| F-027 | Seasonal baseline + AnomalyDetector | DONE | — | commit b6399f6 |
+| F-028 | WaterQualityForecast (+ CI) | DONE | — | commit a203616 |
+| F-029 | Predictor interface + validation/skill gate | DONE | — | commit 422e0a9 |
 
 ## Phase 6 — AI Layer *(P0)*
 
@@ -178,6 +178,29 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-027, F-028, F-029 (Session 6 continued) — PHASE 5 COMPLETE
+
+- Did:
+  F-027: `argus/predict/anomaly_detector/` — `SeasonalBaseline` (per-ISO-week mean/std from
+  Observation history), `AnomalyDetector` (z-score vs baseline; threshold_sigma=2.5 default).
+  Prediction(kind='anomaly') with uncertainty={"sigma": z_score} per INV-9.
+  `Store.get_predictions_by_kind()`. `tests/test_anomaly_detector.py` (21 tests).
+  F-028: `argus/predict/wq_forecast/` — `build_feature_vector()` (7-feature vector: lagged
+  chl-a, sin/cos doy, weather), `build_training_matrix()`, `train_gbm()` (GBM n_estimators=50).
+  `WQForecaster.from_history()` (80/20 holdout, RMSE). `WQForecaster.forecast()` (bootstrap
+  median CI guarantees ci_low ≤ value ≤ ci_high). Prediction(kind='forecast') with
+  uncertainty={"ci_90_low","ci_90_high","rmse"} per INV-9 AC3. `tests/test_wq_forecast.py` (24 tests).
+  F-029: `argus/eval/skill_gate.py` — `check_gate()`, `gate_predictions()`. `Store.passed_gate`
+  column on skill_reports (idempotent ALTER TABLE). `Store.get_skill_reports_by_predictor()`.
+  `argus/api/routers/waterbody.py` — `GET /waterbody/{id}/forecasts` (gated) and
+  `GET /waterbody/{id}/raw_predictions` (unfiltered). `tests/test_skill_gate.py` (18 tests).
+- State: All Phase 5 ACs met. 641/641 offline tests pass. ruff clean. mypy clean.
+  Phase 5 DoD: F-027–F-029 done; WQForecast SkillReport gate enforced in API; INV-9 satisfied.
+- Git: main · F-027 b6399f6 · F-028 a203616 · F-029 422e0a9
+- Quota: Zero.
+- Next: F-030 — AI Assistant scaffolding + grounding/citation guards (Phase 6)
+- Blockers: OQ-D (LLM tier/budget) still open. F-030 can proceed with stub/offline mode.
 
 ### 2026-06-27 — implementation — F-024, F-025, F-026 (Session 6) — PHASE 4 COMPLETE
 
