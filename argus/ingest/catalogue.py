@@ -7,14 +7,13 @@ from typing import Any
 
 import requests
 
+from argus.core.errors import CatalogueError  # noqa: E402 — re-export for backward compat
 from argus.core.models import AOI, SourceRef
 from argus.ingest.cdse_auth import CdseAuth
 
 CDSE_STAC_URL = "https://catalogue.dataspace.copernicus.eu/stac/search"
 
-
-class CatalogueError(Exception):
-    """Raised when a CDSE catalogue search request fails."""
+__all__ = ["CatalogueError", "search_s1_grd"]
 
 
 def search_s1_grd(

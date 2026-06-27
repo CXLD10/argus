@@ -10,14 +10,13 @@ from typing import Any
 from shapely.geometry import shape
 from shapely.validation import explain_validity
 
+from argus.core.errors import AOIError  # noqa: E402 — re-export for backward compat
 from argus.core.models import AOI
 
 # Reject AOIs larger than this — conserves CDSE quota and avoids over-broad requests.
 _MAX_AREA_KM2 = 500_000.0
 
-
-class AOIError(ValueError):
-    """Raised when an AOI file or geometry fails validation."""
+__all__ = ["AOIError", "load_aoi"]
 
 
 def load_aoi(path: Path) -> AOI:

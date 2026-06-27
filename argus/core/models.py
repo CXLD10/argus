@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from argus.core.errors import ObservationTypeError
+
 # Registered obs_type values — any new domain must extend this set.
 VALID_OBS_TYPES: frozenset[str] = frozenset(
     {
@@ -131,7 +133,10 @@ class Observation(BaseModel):
     @classmethod
     def _check_obs_type(cls, v: str) -> str:
         if v not in VALID_OBS_TYPES:
-            raise ValueError(f"obs_type {v!r} not in registered types: {sorted(VALID_OBS_TYPES)}")
+            raise ObservationTypeError(
+                f"obs_type {v!r} not in registered types: {sorted(VALID_OBS_TYPES)}. "
+                "Add the type to VALID_OBS_TYPES in argus.core.models to register it."
+            )
         return v
 
 

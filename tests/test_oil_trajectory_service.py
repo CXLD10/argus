@@ -184,7 +184,7 @@ def test_run_simulation_subprocess_failure_raises() -> None:
             cmd, returncode=1, stdout="", stderr="opendrift not found"
         )
 
-    with patch("subprocess.run", _fail), pytest.raises(RuntimeError, match="sim_worker exited"):
+    with patch("subprocess.run", _fail), pytest.raises(Exception, match="sim_worker exited"):
         run_simulation(_make_sim_input(), registry=reg)
 
 

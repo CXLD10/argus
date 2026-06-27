@@ -11,15 +11,11 @@ from typing import Any
 
 import yaml
 
+from argus.core.errors import OilTypeNotFoundError, OilTypeRequiredError  # noqa: E402 — re-export
+
 _DEFAULT_REGISTRY = Path("config") / "oil_types.yaml"
 
-
-class OilTypeRequiredError(ValueError):
-    """Raised when oil_type is absent or empty (INV-5)."""
-
-
-class OilTypeNotFoundError(ValueError):
-    """Raised when oil_type is not in the registry (INV-5)."""
+__all__ = ["OilType", "OilTypeNotFoundError", "OilTypeRegistry", "OilTypeRequiredError", "load_oil_types"]
 
 
 @dataclass(frozen=True)

@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from argus.core.errors import SimulationError
 from argus.predict.oil_trajectory.oil_types import (
     OilTypeNotFoundError,  # re-exported for callers
     OilTypeRegistry,
@@ -88,5 +89,8 @@ def run_simulation(
             text=True,
         )
         if result.returncode != 0:
-            raise RuntimeError(f"sim_worker exited with code {result.returncode}:\n{result.stderr}")
+            raise SimulationError(
+                f"sim_worker exited with code {result.returncode}:\n{result.stderr}\n"
+                "Ensure opendrift is installed in the simulation environment."
+            )
         return json.loads(out_path.read_text())  # type: ignore[no-any-return]

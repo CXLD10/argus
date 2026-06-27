@@ -7,6 +7,7 @@ from typing import Any
 
 import requests
 
+from argus.core.errors import ProcessApiError  # noqa: E402 — re-export for backward compat
 from argus.core.models import AOI, SourceRef
 from argus.ingest.cdse_auth import CdseAuth
 
@@ -28,8 +29,7 @@ _S1_EVALSCRIPT = (
 )
 
 
-class ProcessApiError(Exception):
-    """Raised when the CDSE Process API returns an error or a request fails."""
+__all__ = ["ProcessApiError", "fetch_s1_subset"]
 
 
 def fetch_s1_subset(

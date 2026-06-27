@@ -15,13 +15,13 @@ from typing import Any
 
 import requests
 
+from argus.core.errors import CmemsUnavailableError  # noqa: E402 — re-export for backward compat
+
 _OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 _OPEN_METEO_MARINE_BASE = "https://marine-api.open-meteo.com/v1/marine"
 _CMEMS_BASE = "https://nrt.cmems-du.eu/motu-web/Motu"
 
-
-class CmemsUnavailableError(RuntimeError):
-    """Raised when the CMEMS endpoint is unreachable or returns an error."""
+__all__ = ["CmemsUnavailableError", "ForcingGrid", "get_forcing"]
 
 
 @dataclass

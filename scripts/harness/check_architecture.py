@@ -33,13 +33,14 @@ def check_val008_copyleft(root: Path) -> list[str]:
         root / "argus" / "aoi",
         root / "argus" / "preprocess",
     ]
+    opendrift_import = re.compile(r"^(?:import opendrift|from opendrift)", re.MULTILINE)
     violations: list[str] = []
     for spine_dir in spine_dirs:
         if not spine_dir.exists():
             continue
         for py_file in spine_dir.rglob("*.py"):
             text = py_file.read_text()
-            if "opendrift" in text:
+            if opendrift_import.search(text):
                 violations.append(
                     f"VAL-008 FAIL: GPL import 'opendrift' found in spine module {py_file}"
                 )

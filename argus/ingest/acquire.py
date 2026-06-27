@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from argus.core.config import Settings
+from argus.core.errors import AcquisitionError, QuotaExceededError
 from argus.core.models import AOI, Scene, SourceRef
 from argus.core.store import Store
 from argus.ingest.cdse_auth import CdseAuth
@@ -14,9 +15,7 @@ from argus.ingest.process_api import fetch_s1_subset
 
 _BYTES_PER_GB = 1_073_741_824
 
-
-class AcquisitionError(Exception):
-    """Raised when an acquisition is refused (quota, config, or API failure)."""
+__all__ = ["AcquisitionError", "QuotaExceededError", "acquire_scene"]
 
 
 def acquire_scene(
@@ -28,15 +27,15 @@ def acquire_scene(
 ) -> Scene:
     """Download a σ⁰ GeoTIFF for *ref*, enforce the daily CDSE quota, persist the Scene.
 
-    Raises AcquisitionError if the daily quota is already exhausted before downloading,
-    or if the downloaded byte count would push usage over the limit.
+    Raises QuotaExceededError if the daily quota is already exhausted before downloading,
+    or AcquisitionError if the downloaded byte count would push usage over the limit.
     """
     daily_limit = int(settings.cdse.daily_quota_gb * _BYTES_PER_GB)
     today = datetime.now(UTC)
     used = store.daily_bytes_total(today)
 
     if used >= daily_limit:
-        raise AcquisitionError(
+        raise QuotaExceededError(
             f"CDSE daily quota exhausted: {used / _BYTES_PER_GB:.3f} GB used of "
             f"{settings.cdse.daily_quota_gb:.1f} GB. Try again tomorrow."
         )

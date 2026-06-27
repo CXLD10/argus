@@ -9,12 +9,12 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field
 
+from argus.core.errors import ConfigError  # noqa: E402 — re-export for backward compat
+
 _REPO_ROOT = Path(__file__).parent.parent.parent
 _DEFAULT_SETTINGS_PATH = _REPO_ROOT / "config" / "settings.yaml"
 
-
-class ConfigError(Exception):
-    """Raised when configuration is invalid or missing required values."""
+__all__ = ["ConfigError"]
 
 
 class CdseConfig(BaseModel):

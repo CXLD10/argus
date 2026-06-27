@@ -10,14 +10,14 @@ from dataclasses import dataclass
 
 import requests
 
+from argus.core.errors import CdseAuthError  # noqa: E402 — re-export for backward compat
+
 CDSE_TOKEN_URL = (
     "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 )
 _EXPIRY_BUFFER_SECS = 60
 
-
-class CdseAuthError(Exception):
-    """Raised when CDSE authentication fails."""
+__all__ = ["CdseAuth", "CdseAuthError"]
 
 
 @dataclass
