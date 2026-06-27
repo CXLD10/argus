@@ -52,6 +52,18 @@ class Store:
                 )
             """)
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS skill_reports (
+                    id              TEXT PRIMARY KEY,
+                    predictor_id    TEXT NOT NULL,
+                    eval_case_id    TEXT NOT NULL,
+                    precision       REAL NOT NULL,
+                    recall          REAL NOT NULL,
+                    f1              REAL NOT NULL,
+                    n_observations  INTEGER NOT NULL,
+                    created_at      TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS observations (
                     id               TEXT PRIMARY KEY,
                     analysis_run_id  TEXT NOT NULL,
@@ -174,6 +186,47 @@ class Store:
                 "SELECT * FROM observations WHERE analysis_run_id = ?", (run_id,)
             ).fetchall()
         return [_row_to_obs(r) for r in rows]
+
+    # ── SkillReport CRUD (scaffold — gating UI is F-029) ─────────────────────
+
+    def save_skill_report(
+        self,
+        report_id: str,
+        predictor_id: str,
+        eval_case_id: str,
+        precision: float,
+        recall: float,
+        f1: float,
+        n_observations: int,
+        created_at: datetime,
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO skill_reports
+                    (id, predictor_id, eval_case_id, precision, recall, f1,
+                     n_observations, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    report_id,
+                    predictor_id,
+                    eval_case_id,
+                    precision,
+                    recall,
+                    f1,
+                    n_observations,
+                    created_at.isoformat(),
+                ),
+            )
+
+    def get_skill_reports_for_case(self, eval_case_id: str) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM skill_reports WHERE eval_case_id = ?",
+                (eval_case_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     # ── Quota helpers ─────────────────────────────────────────────────────────
 
