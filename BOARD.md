@@ -79,9 +79,9 @@ Detailed specs: [`docs/features/phase-4.md`](docs/features/phase-4.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-024 | Water-body model + targets + resolution gate | TODO | — | `below_resolution` policy |
-| F-025 | Sentinel-2/3 optical ingestion | TODO | — | dep F-024 |
-| F-026 | `inland_wq` analyzer (chl-a/turbidity/CDOM/temp) + calibration state | TODO | — | dep F-025 · measured-proxy tag |
+| F-024 | Water-body model + targets + resolution gate | DONE | — | commit 03c0edb |
+| F-025 | Sentinel-2/3 optical ingestion | DONE | — | commit 40abb16 |
+| F-026 | `inland_wq` analyzer (chl-a/turbidity/CDOM/temp) + calibration state | DONE | — | commit f119a9e |
 
 ## Phase 5 — Prediction Engine: Water Quality *(P0)*
 
@@ -178,6 +178,32 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-024, F-025, F-026 (Session 6) — PHASE 4 COMPLETE
+
+- Did:
+  F-024: `argus/aoi/loader.py` — `load_water_body_target()` reads GeoJSON Feature + optional meta
+  YAML; `_approx_area_km2()` via shapely; `resolution_status` gate (`MIN_WATER_BODY_AREA_HA = 1.0`);
+  `require_eligible()` raises `BelowResolutionError`. `argus/core/errors.py` — `BelowResolutionError`
+  (subclass of `AOIError`). `config/water_bodies/reference_lake.geojson` + `reference_lake_meta.yaml`.
+  `tests/test_water_body_loader.py` (18 tests).
+  F-025: `argus/ingest/catalogue.py` — `search_s2()` (SENTINEL-2 / S2MSI2A, cloud-cover filter),
+  `search_s3()` (SENTINEL-3 / OL_2_WFR___, OLCI). `argus/ingest/process_api.py` — `fetch_s2_subset()`
+  (6-band L2A evalscript), `fetch_s3_olci_subset()` (10-band OLCI). `argus/preprocess/optical.py` —
+  `OpticalScene`, `preprocess_optical()`, `mask_clouds()` stub. `argus/core/models.py` — added
+  "bloom_presence" to `VALID_OBS_TYPES`. Fixtures: `cdse_s2_search_reference_lake.json`,
+  `s2_water_body_100x100.npy`. Tests: `test_s2_catalogue.py` (17), `test_s3_catalogue.py` (7).
+  F-026: `argus/domains/inland_wq/indices.py` — `compute_ndci()`, `compute_ndti()`, `compute_cdom()`,
+  `detect_bloom_presence()` (fraction-above-threshold; BLOOM_NDCI_THRESHOLD=0.25, BLOOM_PIXEL_FRACTION=0.02).
+  `argus/domains/inland_wq/analyzer.py` — `InlandWqDomain` implementing Domain protocol; `search()`
+  calls `require_eligible()` before any CDSE access; `analyze()` emits chlorophyll_a/turbidity/cdom
+  (evidence_class="measured") + bloom_presence (evidence_class="inferred") Observations with
+  `calibration_state` in attrs. `tests/test_optical_indices.py` (15), `tests/test_inland_wq_analyzer.py` (17).
+- State: All 4 ACs met. 578/578 offline tests pass. ruff clean. mypy clean. Phase 4 DoD: F-024–F-026 all done.
+- Git: main · F-024 03c0edb · F-025 40abb16 · F-026 f119a9e
+- Quota: Zero.
+- Next: F-027 — Seasonal baseline + AnomalyDetector (Phase 5)
+- Blockers: None. OQ-B still blocks F-040; OQ-D still blocks F-030.
 
 ### 2026-06-27 — implementation — F-022, F-023 (Session 5 continued) — PHASE 3.5 COMPLETE
 

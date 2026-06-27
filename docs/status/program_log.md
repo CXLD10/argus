@@ -4,6 +4,61 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 6 — F-024–F-026: Inland Water Quality Domain — PHASE 4 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation session (high-velocity mode)
+**Tasks:** F-024, F-025, F-026 complete — Phase 4 (Domain D2: Inland Water Quality) complete
+
+### What happened
+
+**F-024 — Water-body model + targets + resolution gate**
+- `argus/aoi/loader.py`: added `load_water_body_target()` — reads GeoJSON Feature + optional
+  meta YAML; computes `area_ha` via shapely `_approx_area_km2()`; sets
+  `resolution_status ∈ {"eligible","below_resolution"}` against `MIN_WATER_BODY_AREA_HA = 1.0`.
+  Added `require_eligible()` which raises `BelowResolutionError` for below-resolution targets.
+- `argus/core/errors.py`: `BelowResolutionError(AOIError)` added.
+- `config/water_bodies/reference_lake.geojson` + `reference_lake_meta.yaml`: anchor fixture
+  (~11 ha water body in Trinidad/Tobago AOR; calibration_state="uncalibrated").
+- `tests/test_water_body_loader.py` (18 tests): all passing.
+- Commit: 03c0edb
+
+**F-025 — Sentinel-2/3 optical ingestion**
+- `argus/ingest/catalogue.py`: `search_s2()` (SENTINEL-2, S2MSI2A, cloud-cover filter applied
+  client-side), `search_s3()` (SENTINEL-3, OL_2_WFR___, OLCI sensor mode).
+- `argus/ingest/process_api.py`: `fetch_s2_subset()` (6-band B2/B3/B4/B5/B8A/B11 FLOAT32
+  evalscript; S2L2A type), `fetch_s3_olci_subset()` (10-band Oa03–Oa12; S3OLCI type).
+- `argus/preprocess/optical.py`: `OpticalScene` dataclass (bands dict + GeoTransform + source);
+  `preprocess_optical()` applies land mask (land pixels → NaN); `mask_clouds()` no-op stub
+  (requires SCL band, deferred Phase 5).
+- `argus/core/models.py`: added `"bloom_presence"` to `VALID_OBS_TYPES`.
+- Fixtures: `tests/fixtures/cdse_s2_search_reference_lake.json` (2-scene STAC response in
+  reverse order to verify sort); `tests/fixtures/s2_water_body_100x100.npy` (6×100×100 float32,
+  seed=77, algae signal at rows 20:40 cols 20:40).
+- Tests: `test_s2_catalogue.py` (17), `test_s3_catalogue.py` (7). All passing.
+- Commit: 40abb16
+
+**F-026 — `inland_wq` Analyzer**
+- `argus/domains/inland_wq/indices.py`: `compute_ndci()` (B5-B4)/(B5+B4), `compute_ndti()`
+  (B4-B3)/(B4+B3), `compute_cdom()` B2/B3; all NaN-safe via `np.errstate + np.where`.
+  `detect_bloom_presence()`: returns True if ≥ 2% of water pixels exceed NDCI threshold 0.25.
+- `argus/domains/inland_wq/analyzer.py`: `InlandWqDomain` implementing v2.0 Domain protocol.
+  `search()` calls `require_eligible()` before any CDSE access (AC4). `acquire()` raises
+  `NotImplementedError` (requires live auth). `analyze()` produces Observations:
+  chlorophyll_a/turbidity/cdom with `evidence_class="measured"`, bloom_presence with
+  `evidence_class="inferred"`. `calibration_state` from `MonitorTarget` propagated to all
+  Observation `attrs`.
+- `tests/test_optical_indices.py` (15 tests), `tests/test_inland_wq_analyzer.py` (17 tests).
+- All 4 ACs verified: correct NDCI/NDTI values within tolerance, evidence_class honesty,
+  calibration_state propagation, BelowResolutionError before CDSE.
+- Commit: f119a9e
+
+### Outcome
+578/578 offline tests pass. ruff clean. mypy clean. Phase 4 DoD complete.
+Next: F-027 (Phase 5) — Seasonal baseline + AnomalyDetector.
+
+---
+
 ## 2026-06-27 — Session 5 — F-022–F-023: Config Profiles, Health Endpoints — PHASE 3.5 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
