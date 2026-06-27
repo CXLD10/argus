@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "shapely>=2.0",
     "requests>=2.31",
+    "scipy>=1.13",
 ]
 
 [project.scripts]
@@ -59,7 +60,7 @@ indent-style = "space"
 
 # ── Mypy ──────────────────────────────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = false
 warn_return_any = true
 warn_unused_ignores = true

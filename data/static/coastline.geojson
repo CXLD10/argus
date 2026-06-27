@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "Tobago", "source": "manual-simplified"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-60.90, 11.16],
+          [-60.86, 11.32],
+          [-60.73, 11.35],
+          [-60.52, 11.27],
+          [-60.50, 11.15],
+          [-60.60, 11.10],
+          [-60.80, 11.12],
+          [-60.90, 11.16]
+        ]]
+      }
+    }
+  ]
+}
