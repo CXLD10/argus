@@ -22,11 +22,11 @@ Detailed specs: [`docs/features/phase-0.md`](docs/features/phase-0.md)
 |---|---|---|---|---|
 | F-000 | Repo & tooling scaffold | DONE | — | commit 850b852 |
 | F-001 | Config + AOI/target model & loader | DONE | — | commit 9662b06 |
-| F-002 | CDSE catalogue client (auth + search) | TODO | — | dep F-001 · creds via env |
-| F-003 | Scene acquisition + persistence | TODO | — | dep F-002 · prefer subset |
-| F-004 | SAR preprocessing (masked σ⁰ dB) | TODO | — | dep F-003 |
-| F-005 | Naive dark-spot detector + Observation(obs_type="oil_slick") | TODO | — | dep F-004 · fixes Domain interface |
-| F-006 | Static product export — spike close | TODO | — | dep F-005 |
+| F-002 | CDSE catalogue client (auth + search) | DONE | — | commit ba12b28 |
+| F-003 | Scene acquisition + persistence | DONE | — | commit d5ed697 |
+| F-004 | SAR preprocessing (masked σ⁰ dB) | DONE | — | commit 7fa5c77 |
+| F-005 | Naive dark-spot detector + Observation(obs_type="oil_slick") | DONE | — | commit 56a68dc |
+| F-006 | Static product export — spike close | DONE | — | commit 2f9fa68 · Phase 0 complete |
 
 ## Phase 1 — Detection vertical (oil) *(P0)*
 
@@ -178,6 +178,71 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-006 (Session 5 continued) — PHASE 0 COMPLETE
+
+- Did: `argus/export/products.py` — `export_geojson()` (FeatureCollection with evidence_class
+  preserved per INV-3), `export_png()` (Matplotlib Agg backend, VV dB raster + polygon overlays),
+  `export_products()` (orchestrates to run-tagged output dir). `argus/cli.py` — `argus run` command
+  with `--aoi`, `--since`, `--live` (stub), `--output-dir`, `--config-dir` (hidden, for testing);
+  offline mode plants a dark blob and runs the full Phase 0 stack. `data/eval/tobago_2024.json` —
+  anchor EvalCase with `oil_type="crude_medium"` (ADR-0006), truth_geometry, provenance.
+  Added `matplotlib>=3.8` to dependencies (INV-1: MIT, zero recurring cost).
+  `tests/test_export.py` (15 tests), `tests/test_phase0_e2e.py` (13 tests).
+- State: 147/147 offline tests pass, 2 live deselected. ruff clean. mypy clean (22 source files).
+  Phase 0 definition-of-done checklist: all items met. DONE.
+- Git: main · 2f9fa68
+- Quota: Zero.
+- Next: F-007 — Robust dark-spot segmentation (Phase 1)
+- Blockers: None. OQ-B still blocks F-040; OQ-D still blocks F-030.
+
+### 2026-06-27 — implementation — F-005 (Session 5 continued)
+
+- Did: `argus/domains/base.py` — `Acquisition` dataclass + `Domain` Protocol (INV-2 stable).
+  `argus/domains/marine_oil/detector.py` — `OilDomainV0.analyze()`: adaptive VV dB threshold
+  (mean − 2σ), morphological clean-up, connected-component labelling, convex-hull Observation
+  output; `make_analysis_run()` helper. `argus/core/models.py` — `AnalysisRun` + `Observation`
+  (INV-3: evidence_class on every Observation; INV-9: status field).
+  `argus/core/store.py` — `analysis_runs` + `observations` tables + CRUD (INV-6: sole sqlite3
+  importer). `tests/test_oil_detector.py` (14), `tests/test_store_observation.py` (16).
+- State: 119 offline tests pass, 2 live deselected. ruff clean. mypy clean (20 source files). DONE.
+- Git: main · 56a68dc
+- Quota: Zero.
+- Next: F-006 — Static product export + EvalCase + `argus run` CLI command
+- Blockers: None.
+
+### 2026-06-27 — implementation — F-003 + F-004 (Session 5 continued)
+
+- Did: F-003: `argus/ingest/process_api.py` — `fetch_s1_subset()` (Sentinel Hub Process API,
+  2-band VV+VH FLOAT32 evalscript, returns tiff bytes + byte count). `argus/ingest/acquire.py` —
+  `acquire_scene()` (pre/post-quota check, artifact write, Scene persistence). `argus/core/store.py` —
+  SQLite store with `scenes` table, `save_scene/get_scene/daily_bytes_total()` (INV-6).
+  `argus/core/models.py` — `Scene` added. `tests/test_store_scene.py` (15), `tests/test_acquire.py` (6).
+  F-004: `argus/preprocess/landmask.py` — `GeoTransform` dataclass + `rasterize_land_mask()`
+  (shapely 2.0 vectorized). `argus/preprocess/sar.py` — `PreprocessedScene` + `preprocess()`
+  (_to_db → _speckle_filter → NaN land pixels). `data/static/coastline.geojson` (Tobago fixture).
+  `tests/fixtures/synthetic_sar_100x100.npy`. `tests/test_preprocess.py` (14), `tests/test_landmask.py` (9).
+- State: 89 tests after F-004. ruff clean. mypy clean. DONE.
+- Git: main · d5ed697 (F-003) · 7fa5c77 (F-004)
+- Quota: Zero.
+- Next: F-005 (completed above)
+- Blockers: None.
+
+### 2026-06-27 — implementation — F-002 (Session 5 continued)
+
+- Did: `argus/ingest/cdse_auth.py` — CdseAuth (password-grant OAuth2, in-memory token cache,
+  60s expiry buffer, never logs credentials); `CdseAuthError` with remediation text.
+  `argus/ingest/catalogue.py` — `search_s1_grd()` (STAC search, IW+GRD filter, sorted by
+  sensing_time); `CatalogueError`. `argus/core/models.py` — `SourceRef` added.
+  `tests/fixtures/cdse_s1_search_tobago.json` — 2-product fixture in reverse order (proves sort).
+  `tests/test_catalogue.py` — 12 mocked tests covering parse, sort, auth, cache, bearer header.
+  `tests/integration/test_cdse_live.py` — 2 live tests (skipped by default with `not live`).
+  `pyproject.toml` — added `requests>=2.31`, `-m 'not live'` to default addopts.
+- State: 45 tests pass, 2 live deselected. ruff clean. mypy clean (11 source files). DONE.
+- Git: main · ba12b28
+- Quota: Zero.
+- Next: F-003 — Scene acquisition + persistence (Process API + SQLite store)
+- Blockers: None.
 
 ### 2026-06-27 — implementation — F-001 (Session 5)
 

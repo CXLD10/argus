@@ -4,6 +4,125 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 5 — F-006: Product Export, EvalCase & CLI Run (PHASE 0 COMPLETE)
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation of Session 5 (high-velocity mode)
+**Tasks:** F-006 complete — Phase 0 definition of done met
+
+### What happened
+
+- Added `matplotlib>=3.8` to `pyproject.toml` (MIT license, INV-1 compliant).
+- Created `argus/export/__init__.py` and `argus/export/products.py`:
+  - `export_geojson(observations, run, path)`: writes FeatureCollection; all Observation
+    properties (obs_type, evidence_class, area_km2, confidence, status) preserved in
+    feature properties; collection-level properties include analysis_run_id and domain_id.
+  - `export_png(preprocessed, observations, path)`: uses `matplotlib.backends.backend_agg.FigureCanvasAgg`
+    (non-interactive Agg backend, no global pyplot state); renders VV dB raster with gray colormap,
+    overlays candidate observation polygons in red.
+  - `export_products(observations, run, preprocessed, output_dir)`: orchestrates both exports
+    to a run-tagged subdirectory.
+- Updated `argus/cli.py` with `argus run` command:
+  - `--aoi <name>`: loads `config/aois/<name>.geojson` via `--config-dir` (testability hook)
+  - `--since <date>`: used as output label
+  - `--live`: stub — exits with error (Phase 1 implements live CDSE path)
+  - Offline mode: synthetic SAR with planted dark blob (seed=42), all-water land mask;
+    runs preprocess → detect → export; deterministic due to INV-8.
+  - Uses `Annotated[...]` typer style + module-level Path constants (ruff B008 compliant).
+- Created `data/eval/tobago_2024.json`:
+  - EvalCase with `oil_type="crude_medium"` per ADR-0006 (no default; must be explicit)
+  - truth_geometry: approximate bounding polygon from REMPEC incident report 2024-02
+  - event_time, cdse_product_id, bbox, provenance fields all present
+
+### Phase 0 definition of done — all items met
+
+- [x] F-000 through F-006 acceptance criteria all met
+- [x] `tests/test_phase0_e2e.py` green offline (13 tests)
+- [x] `Domain` protocol in `argus/domains/base.py` stable
+- [x] `AnalysisRun` + `Observation` in store (INV-6)
+- [x] `evidence_class="measured"` on all oil detections (INV-3)
+- [x] `EvalCase` tobago_2024.json includes `oil_type` field (ADR-0006)
+- [ ] One opt-in `--live` path run manually — deferred to Phase 1 (requires CDSE credentials)
+
+### Git
+
+Commit `2f9fa68` — `feat(F-006): add product export, EvalCase, and CLI run command`
+
+### Test results
+
+147/147 offline tests pass, 2 live deselected. `ruff check` clean. `mypy` clean (22 files).
+
+### Quota used
+
+Zero.
+
+---
+
+## 2026-06-27 — Session 5 — F-003, F-004, F-005: Scene Acquisition, SAR Preprocessing, Domain Protocol & Dark-Spot Detector
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation of Session 5 (high-velocity mode)
+**Tasks:** F-003 complete, F-004 complete, F-005 complete
+
+### What happened
+
+**F-003 — Scene acquisition + persistence:**
+- Created `argus/ingest/process_api.py`: `fetch_s1_subset()` calls Sentinel Hub Process API,
+  sends 2-band VV+VH evalscript (FLOAT32 output), returns `(tiff_bytes, byte_count)`.
+  Uses AOI bbox for the request body; bearer auth from `CdseAuth`.
+- Created `argus/ingest/acquire.py`: `acquire_scene()` enforces pre/post CDSE daily quota,
+  writes GeoTIFF artifact to disk, persists `Scene` via store.
+- Extended `argus/core/models.py` with `Scene` model.
+- Created `argus/core/store.py`: SQLite store (sole sqlite3 importer per INV-6); `scenes`
+  table; `save_scene/get_scene/daily_bytes_total()`. Row factory for named column access.
+- 21 new tests: `tests/test_store_scene.py` (15), `tests/test_acquire.py` (6).
+
+**F-004 — SAR preprocessing (masked σ⁰ dB):**
+- Created `argus/preprocess/landmask.py`: `GeoTransform` dataclass with `lon_res`/`lat_res`
+  properties; `load_coastline()` loads a GeoJSON file; `rasterize_land_mask()` uses shapely 2.0
+  vectorized `shapely.contains()` + `shapely.points()` — no rasterio required.
+- Created `argus/preprocess/sar.py`: `preprocess()` applies `_to_db()` (10·log10, epsilon=1e-10),
+  `_speckle_filter()` (scipy `median_filter`), then sets land pixels to NaN (float32).
+  `PreprocessedScene` dataclass carries `vv_db`, `vh_db`, `transform`, `crs`.
+- Created `data/static/coastline.geojson`: 8-vertex Tobago island polygon for offline tests.
+- Created `tests/fixtures/synthetic_sar_100x100.npy`: shape (2,100,100) float32, seed=42.
+- 23 new tests: `tests/test_preprocess.py` (14), `tests/test_landmask.py` (9).
+
+**F-005 — Domain Protocol + Naive Dark-Spot Detector + Observation Persistence:**
+- Created `argus/domains/base.py`: `Acquisition` dataclass + `Domain` Protocol (INV-2 stable
+  interface — never edit without ADR).
+- Created `argus/domains/marine_oil/detector.py`: `OilDomainV0` with `analyze()` calling
+  `_detect()`: adaptive threshold (mean − 2·max(σ, 1 dB) on VV dB), morphological erosion +
+  dilation (1 iteration each), `scipy.ndimage.label`, per-component convex-hull `Observation`.
+  `_approx_area_km2()` uses centroid-lat scaling. `make_analysis_run()` helper.
+- Extended `argus/core/models.py` with `AnalysisRun` and `Observation` (INV-3: `evidence_class`
+  required; INV-9: `status` field gates UI trust).
+- Extended `argus/core/store.py`: `analysis_runs` and `observations` SQLite tables; CRUD methods
+  `save/get_analysis_run`, `save/get_observation`, `get_observations_for_run`.
+- 30 new tests: `tests/test_oil_detector.py` (14), `tests/test_store_observation.py` (16).
+
+### Decisions made
+
+- `strict=True` passed to `zip(lons, lats)` in detector (lengths always equal from `np.where()`).
+- `ruff` B905 requires explicit `strict=` on all `zip()` calls — applied project-wide.
+- mypy `python_version` bumped to 3.12 (numpy 2.x stubs use PEP 695 `type` statement).
+
+### Git
+
+- Commit `d5ed697` — `feat(F-003): add Process API client, scene acquisition, and SQLite store`
+- Commit `7fa5c77` — `feat(F-004): add SAR preprocessing with land mask and speckle filter`
+- Commit `56a68dc` — `feat(F-005): add Domain protocol, naive dark-spot detector, and Observation persistence`
+
+### Test results
+
+119/119 offline tests pass. `ruff check` clean. `mypy` clean (20 source files).
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 5 — F-001: Config + AOI/Target Model & Loader
 
 **Agent:** Claude claude-sonnet-4-6
