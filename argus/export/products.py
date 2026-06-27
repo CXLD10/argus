@@ -1,8 +1,9 @@
-"""Phase 0 product export: GeoJSON FeatureCollection and PNG raster overview."""
+"""Product export: GeoJSON FeatureCollection, PNG raster overview, and JSON metadata."""
 
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,7 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
-from argus.core.models import AnalysisRun, Observation
+from argus.core.models import AnalysisRun, ImpactAssessment, Observation, Prediction
 from argus.preprocess.sar import PreprocessedScene
 
 
@@ -90,16 +91,67 @@ def export_png(
     return path
 
 
+def export_metadata(
+    run: AnalysisRun,
+    observations: list[Observation],
+    path: Path,
+    *,
+    prediction: Prediction | None = None,
+    impact: list[ImpactAssessment] | None = None,
+) -> Path:
+    """Write a JSON metadata file summarising the full pipeline run."""
+    meta: dict[str, Any] = {
+        "exported_at": datetime.now(UTC).isoformat(),
+        "analysis_run_id": run.id,
+        "aoi_id": run.aoi_id,
+        "domain_id": run.domain_id,
+        "scene_id": run.scene_id,
+        "status": run.status,
+        "n_observations": len(observations),
+        "observations": [
+            {
+                "id": o.id,
+                "obs_type": o.obs_type,
+                "evidence_class": o.evidence_class,
+                "area_km2": o.area_km2,
+                "confidence": o.confidence,
+                "status": o.status,
+            }
+            for o in observations
+        ],
+    }
+    if prediction is not None:
+        meta["prediction"] = {
+            "id": prediction.id,
+            "predictor_id": prediction.predictor_id,
+            "kind": prediction.kind,
+        }
+    if impact:
+        meta["impact"] = [
+            {
+                "exposure_layer_id": ia.exposure_layer_id,
+                "eta_hours": ia.eta_hours,
+                "metrics": ia.metrics,
+            }
+            for ia in impact
+        ]
+    path.write_text(json.dumps(meta, indent=2))
+    return path
+
+
 def export_products(
     observations: list[Observation],
     run: AnalysisRun,
     preprocessed: PreprocessedScene,
     output_dir: Path,
+    *,
+    prediction: Prediction | None = None,
+    impact: list[ImpactAssessment] | None = None,
 ) -> dict[str, Path]:
-    """Export GeoJSON + PNG for a completed analysis run; return artifact paths."""
+    """Export GeoJSON + PNG + JSON metadata for a completed analysis run."""
     output_dir.mkdir(parents=True, exist_ok=True)
     run_tag = run.id[:8]
-    return {
+    artifacts: dict[str, Path] = {
         "geojson": export_geojson(
             observations,
             run,
@@ -110,7 +162,15 @@ def export_products(
             observations,
             output_dir / f"raster_{run_tag}.png",
         ),
+        "metadata": export_metadata(
+            run,
+            observations,
+            output_dir / f"metadata_{run_tag}.json",
+            prediction=prediction,
+            impact=impact,
+        ),
     }
+    return artifacts
 
 
 def _obs_to_feature(obs: Observation) -> dict[str, Any]:

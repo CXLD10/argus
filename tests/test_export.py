@@ -186,7 +186,7 @@ def test_export_products_returns_geojson_and_png_keys(
     sample_prep: PreprocessedScene,
 ) -> None:
     artifacts = export_products([sample_obs], sample_run, sample_prep, tmp_path / "out")
-    assert set(artifacts.keys()) == {"geojson", "png"}
+    assert set(artifacts.keys()) == {"geojson", "png", "metadata"}
 
 
 def test_export_products_creates_output_dir(

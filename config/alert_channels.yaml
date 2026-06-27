@@ -1,0 +1,23 @@
+# Argus alert channel configuration
+# ────────────────────────────────────────────────────────────────────────────
+# Copy this file and fill in real values. Do NOT commit credentials to git.
+# An empty or absent channels list means no alerts are sent (graceful no-op).
+#
+# Supported channel kinds: webhook, email
+
+channels: []
+
+# ── Webhook example (uncomment and fill in) ──────────────────────────────────
+# channels:
+#   - kind: webhook
+#     url: https://hooks.example.com/argus-alerts
+#
+# ── Email example (uncomment and fill in) ────────────────────────────────────
+#   - kind: email
+#     smtp_host: smtp.example.com
+#     smtp_port: 587
+#     from: argus-noreply@example.com
+#     to:
+#       - operator@example.com
+#     username: argus-noreply@example.com
+#     password: "REPLACE_ME"   # use environment variable or GCP Secret Manager in production
