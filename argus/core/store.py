@@ -12,7 +12,7 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from argus.core.models import AnalysisRun, Observation, Scene
+from argus.core.models import AnalysisRun, ForecastFrame, Observation, Prediction, Scene
 
 
 class Store:
@@ -96,6 +96,30 @@ class Store:
             ):
                 with contextlib.suppress(sqlite3.OperationalError):
                     conn.execute(_stmt)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id              TEXT PRIMARY KEY,
+                    predictor_id    TEXT NOT NULL,
+                    source_obs_ids  TEXT NOT NULL DEFAULT '[]',
+                    kind            TEXT NOT NULL,
+                    evidence_class  TEXT NOT NULL DEFAULT 'modeled',
+                    uncertainty     TEXT NOT NULL DEFAULT '{}',
+                    rng_seed        INTEGER,
+                    attrs           TEXT NOT NULL DEFAULT '{}',
+                    created_at      TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS forecast_frames (
+                    id              TEXT PRIMARY KEY,
+                    prediction_id   TEXT NOT NULL,
+                    valid_at        TEXT NOT NULL,
+                    footprint       TEXT NOT NULL,
+                    grid_ref        TEXT,
+                    particle_count  INTEGER NOT NULL DEFAULT 0,
+                    stats           TEXT NOT NULL DEFAULT '{}'
+                )
+            """)
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -268,6 +292,63 @@ class Store:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    # ── Prediction CRUD (scaffold — F-011) ───────────────────────────────────
+
+    def save_prediction(self, pred: Prediction) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO predictions
+                    (id, predictor_id, source_obs_ids, kind, evidence_class,
+                     uncertainty, rng_seed, attrs, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    pred.id,
+                    pred.predictor_id,
+                    json.dumps(pred.source_obs_ids),
+                    pred.kind,
+                    pred.evidence_class,
+                    json.dumps(pred.uncertainty),
+                    pred.rng_seed,
+                    json.dumps(pred.attrs),
+                    pred.created_at.isoformat(),
+                ),
+            )
+
+    def get_prediction(self, pred_id: str) -> Prediction | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM predictions WHERE id = ?", (pred_id,)).fetchone()
+        return _row_to_prediction(row) if row else None
+
+    # ── ForecastFrame CRUD (scaffold — F-011) ────────────────────────────────
+
+    def save_forecast_frame(self, frame: ForecastFrame) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO forecast_frames
+                    (id, prediction_id, valid_at, footprint, grid_ref, particle_count, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    frame.id,
+                    frame.prediction_id,
+                    frame.valid_at.isoformat(),
+                    json.dumps(frame.footprint),
+                    frame.grid_ref,
+                    frame.particle_count,
+                    json.dumps(frame.stats),
+                ),
+            )
+
+    def get_forecast_frames_for_prediction(self, pred_id: str) -> list[ForecastFrame]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM forecast_frames WHERE prediction_id = ?", (pred_id,)
+            ).fetchall()
+        return [_row_to_frame(r) for r in rows]
+
     # ── Quota helpers ─────────────────────────────────────────────────────────
 
     def daily_bytes_total(self, on: datetime) -> int:
@@ -335,4 +416,30 @@ def _row_to_obs(row: sqlite3.Row) -> Observation:
         unit=row_dict.get("unit"),
         attrs=json.loads(row_dict["attrs"]),
         created_at=datetime.fromisoformat(row_dict["created_at"]),
+    )
+
+
+def _row_to_prediction(row: sqlite3.Row) -> Prediction:
+    return Prediction(
+        id=row["id"],
+        predictor_id=row["predictor_id"],
+        source_obs_ids=json.loads(row["source_obs_ids"]),
+        kind=row["kind"],
+        evidence_class=row["evidence_class"],
+        uncertainty=json.loads(row["uncertainty"]),
+        rng_seed=row["rng_seed"],
+        attrs=json.loads(row["attrs"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _row_to_frame(row: sqlite3.Row) -> ForecastFrame:
+    return ForecastFrame(
+        id=row["id"],
+        prediction_id=row["prediction_id"],
+        valid_at=datetime.fromisoformat(row["valid_at"]),
+        footprint=json.loads(row["footprint"]),
+        grid_ref=row["grid_ref"],
+        particle_count=row["particle_count"],
+        stats=json.loads(row["stats"]),
     )

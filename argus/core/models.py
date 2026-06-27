@@ -135,6 +135,36 @@ class Observation(BaseModel):
         return v
 
 
+class Prediction(BaseModel):
+    """Tier-A predictor output — trajectory, forecast, risk, or anomaly.
+
+    INV-9: uncertainty field is required and must be non-empty.
+    INV-8: rng_seed must be provided for stochastic predictors.
+    """
+
+    id: str
+    predictor_id: str
+    source_obs_ids: list[str] = Field(default_factory=list)
+    kind: Literal["forecast", "risk", "anomaly", "trajectory"]
+    evidence_class: Literal["measured", "modeled", "inferred"] = "modeled"
+    uncertainty: dict[str, Any]  # INV-9: required; ensemble spread / CI / probability
+    rng_seed: int | None = None  # INV-8: required for stochastic predictors
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    attrs: dict[str, Any] = Field(default_factory=dict)
+
+
+class ForecastFrame(BaseModel):
+    """One timestep output from an oil trajectory simulation (kind='trajectory')."""
+
+    id: str
+    prediction_id: str
+    valid_at: datetime
+    footprint: dict[str, Any]  # GeoJSON probability footprint polygon
+    grid_ref: str | None = None  # path to particle grid raster (if any)
+    particle_count: int = 0
+    stats: dict[str, Any] = Field(default_factory=dict)  # min/mean/max drift distance
+
+
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:
     """Flatten all coordinate pairs from a GeoJSON geometry."""
     gtype = geometry.get("type", "")
