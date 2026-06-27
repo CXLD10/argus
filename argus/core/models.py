@@ -101,7 +101,7 @@ class Observation(BaseModel):
     geometry: dict[str, Any]  # GeoJSON geometry
     area_km2: float
     confidence: float  # 0–1
-    status: Literal["candidate", "confirmed", "rejected"] = "candidate"
+    status: Literal["candidate", "confirmed", "dismissed"] = "candidate"
     attrs: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 

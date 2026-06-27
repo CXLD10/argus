@@ -1,0 +1,14 @@
+model_path: models/oil_classifier_v1.pkl
+threshold: 0.5
+n_estimators: 50
+random_state: 42
+features:
+  - area_km2
+  - perimeter_km
+  - compactness
+  - elongation
+  - convexity
+  - orientation
+  - mean_sigma0_db
+  - contrast_vs_background_db
+  - texture_glcm
