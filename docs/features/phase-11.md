@@ -148,6 +148,11 @@ whole system works together as specified.
 **Sign-off:** When all checklist items are checked, Josh signs off on this document.
 The project is then in MVP state.
 
+**Acceptance criteria:**
+- All checklist items above are marked done
+- `docs/status/mvp_checklist.md` exists and is fully checked off
+- Josh has reviewed and signed off on this document
+
 ## Phase 11 Definition of Done = MVP
 
 Phase 11 is done when F-056 sign-off is complete. That is the MVP.
