@@ -267,6 +267,28 @@ class Store:
             ).fetchall()
         return [_row_to_obs(r) for r in rows]
 
+    def get_observations_by_target(
+        self,
+        target_id: str,
+        *,
+        since: datetime | None = None,
+        obs_types: list[str] | None = None,
+    ) -> list[Observation]:
+        """Return Observations for a specific target, ordered newest-first."""
+        query = "SELECT * FROM observations WHERE target_id = ?"
+        params: list[object] = [target_id]
+        if since is not None:
+            query += " AND created_at >= ?"
+            params.append(since.isoformat())
+        if obs_types:
+            placeholders = ",".join("?" * len(obs_types))
+            query += f" AND obs_type IN ({placeholders})"
+            params.extend(obs_types)
+        query += " ORDER BY created_at DESC"
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [_row_to_obs(r) for r in rows]
+
     def transition_observation_status(
         self,
         obs_id: str,

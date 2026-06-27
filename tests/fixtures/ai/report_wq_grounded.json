@@ -1,0 +1,4 @@
+{
+  "text": "The water quality for the monitored area shows chlorophyll-a at 0.127 [obs_r1]. Turbidity is within normal range at value 0.200 [obs_r2]. No anomaly has been detected in the current monitoring period [obs_r1].",
+  "citations": ["obs_r1", "obs_r2"]
+}

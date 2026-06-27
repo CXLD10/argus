@@ -99,6 +99,20 @@ class PredictionListResponse(BaseModel):
     )
 
 
+class AIReportResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    text: str = Field(description="Grounded plain-language situation report.")
+    citations: list[str] = Field(description="Record IDs cited in the report text.")
+    model: str = Field(description="Pinned model version used to generate the report.")
+    # Serialized as "_attribution" to satisfy CC-BY-4.0 attribution requirement.
+    attribution: str = Field(
+        default=_OPEN_METEO_ATTRIBUTION,
+        alias="_attribution",
+        description="Open-Meteo CC BY 4.0 attribution (required by data licence).",
+    )
+
+
 class ImpactAssessmentSchema(BaseModel):
     id: str = Field(description="Unique impact-assessment ID.")
     prediction_id: str = Field(description="Source Prediction ID.")

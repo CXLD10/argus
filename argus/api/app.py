@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from argus import __version__
-from argus.api.routers import aoi, impact, observations, predictions, waterbody
+from argus.api.routers import ai, aoi, impact, observations, predictions, waterbody
 from argus.api.routers import health as health_router
 
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -31,6 +31,7 @@ def create_app(
             {"name": "predictions", "description": "Trajectory and forecast predictions."},
             {"name": "impact", "description": "Exposure-layer impact assessments."},
             {"name": "waterbody", "description": "Water body forecast and skill-gate endpoints."},
+            {"name": "ai", "description": "Grounded AI reports, NL query, and anomaly explanations."},
         ],
     )
     app.state.db_path = db_path
@@ -42,6 +43,7 @@ def create_app(
     app.include_router(predictions.router, prefix="/aois", tags=["predictions"])
     app.include_router(impact.router, prefix="/aois", tags=["impact"])
     app.include_router(waterbody.router, tags=["waterbody"])
+    app.include_router(ai.router, tags=["ai"])
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:
