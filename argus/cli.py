@@ -109,5 +109,25 @@ def run(
     typer.echo(f"png:     {artifacts['png']}")
 
 
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host", help="Bind host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", help="Bind port")] = 8000,
+    db_path: Annotated[Path, typer.Option("--db-path", help="SQLite database path")] = Path(
+        "argus.db"
+    ),
+    config_dir: Annotated[
+        Path, typer.Option("--config-dir", hidden=True, help="Config root")
+    ] = _DEFAULT_CONFIG_DIR,
+) -> None:
+    """Start the Argus API server."""
+    import uvicorn
+
+    from argus.api.app import create_app
+
+    fastapi_app = create_app(db_path=db_path, config_dir=config_dir)
+    uvicorn.run(fastapi_app, host=host, port=port)
+
+
 if __name__ == "__main__":
     app()
