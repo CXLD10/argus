@@ -21,7 +21,7 @@ Detailed specs: [`docs/features/phase-0.md`](docs/features/phase-0.md)
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
 | F-000 | Repo & tooling scaffold | DONE | — | commit 850b852 |
-| F-001 | Config + AOI/target model & loader | TODO | — | dep F-000 |
+| F-001 | Config + AOI/target model & loader | DONE | — | commit 9662b06 |
 | F-002 | CDSE catalogue client (auth + search) | TODO | — | dep F-001 · creds via env |
 | F-003 | Scene acquisition + persistence | TODO | — | dep F-002 · prefer subset |
 | F-004 | SAR preprocessing (masked σ⁰ dB) | TODO | — | dep F-003 |
@@ -178,6 +178,21 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-001 (Session 5)
+
+- Did: Config system (`argus/core/config.py`) with pydantic models for all YAML sections + explicit
+  `ARGUS_*` env var override map; `require_cdse_credentials()` raises `ConfigError` with remediation
+  text and no secret values in output. AOI + MonitorTarget data models (`argus/core/models.py`)
+  with v2.0 canonical names and `AOI.bbox` property. AOI loader (`argus/aoi/loader.py`) with
+  shapely geometry validation, self-intersection check, and 500,000 km² size cap (`AOIError`).
+  Tobago anchor AOI (`config/aois/tobago.geojson`). Added `pyyaml>=6.0` and `shapely>=2.0`
+  to dependencies. 28 new tests across `test_config.py` and `test_aoi_loader.py`.
+- State: All 33 tests pass (28 new + 5 smoke). ruff clean. mypy clean (8 source files). DONE.
+- Git: main · 9662b06
+- Quota: Zero.
+- Next: F-002 — CDSE catalogue client (cdse_auth.py + catalogue.py, mocked HTTP only)
+- Blockers: None. OQ-B blocks F-040; OQ-D blocks F-030.
 
 ### 2026-06-27 — implementation — F-000 (Session 4)
 

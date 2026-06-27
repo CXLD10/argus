@@ -4,6 +4,58 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 5 — F-001: Config + AOI/Target Model & Loader
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Single implementation session
+**Tasks:** F-001 complete
+
+### What happened
+
+- Added `pyyaml>=6.0` and `shapely>=2.0` to `pyproject.toml` dependencies; synced via `uv`.
+- Created `argus/core/config.py`:
+  - Pydantic models for all settings.yaml sections: `CdseConfig`, `OpenMeteoConfig`,
+    `CmemsConfig`, `AiConfig`, `StoreConfig`, `AlertsConfig`, `LoggingConfig`, `PredictionConfig`.
+  - `Settings` root model; `load_settings(path)` loads YAML then applies explicit `_ENV_MAP`
+    of `ARGUS_*` env var overrides (no pydantic-settings nested-delimiter ambiguity).
+  - `ConfigError` raised by `require_cdse_credentials()` with remediation text; never emits
+    credential values in the error message.
+- Created `argus/core/models.py`:
+  - `AOI`: id, name, geometry (GeoJSON dict), `domains: list[str]`, params, active, created_at.
+    `bbox` property extracts (min_lon, min_lat, max_lon, max_lat) from coordinates.
+  - `MonitorTarget`: id, aoi_id, kind (water_body|region), name, geometry, domains,
+    resolution_status (eligible|below_resolution), calibration_state, attrs.
+  - `_extract_coords()` helper flattens coordinates for Point/LineString/Polygon/MultiPolygon.
+  - All v2.0 canonical names; no v1.0 remnants.
+- Created `argus/aoi/__init__.py` and `argus/aoi/loader.py`:
+  - `load_aoi(path)` reads GeoJSON Feature or bare Polygon/MultiPolygon; extracts properties
+    into `AOI`; falls back to file stem for `id` when properties absent.
+  - `_validate_geometry()` uses shapely `is_valid` + `explain_validity`; rejects self-intersecting
+    geometries and AOIs >500,000 km² (rough centroid-lat scaling).
+  - `AOIError(ValueError)` with clear, actionable messages.
+- Created `config/aois/tobago.geojson`: polygon covering Tobago marine waters
+  (10.8–11.5°N, 61.2–60.3°W), `domains=["marine_oil"]`.
+- 28 new tests: `tests/test_config.py` (14) and `tests/test_aoi_loader.py` (14).
+
+### Decisions made
+
+None requiring ADR. Used an explicit `_ENV_MAP` dict instead of pydantic-settings
+`env_nested_delimiter` to avoid ambiguity with multi-word section names (`open_meteo`).
+
+### Git
+
+Commit `9662b06` — `feat(F-001): add config system, AOI model, and loader`
+
+### Test results
+
+33/33 pass. `ruff check` clean. `mypy` clean (8 files).
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 4 — F-000: Repo & Tooling Scaffold
 
 **Agent:** Claude claude-sonnet-4-6
