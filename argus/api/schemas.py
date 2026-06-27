@@ -99,6 +99,24 @@ class PredictionListResponse(BaseModel):
     )
 
 
+class QueryRequest(BaseModel):
+    question: str = Field(description="Natural-language question to ask the AI assistant.")
+
+
+class QueryResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    answer: str = Field(description="Grounded plain-language answer.")
+    citations: list[str] = Field(description="Record IDs cited in the answer.")
+    model: str = Field(description="Pinned model version used to generate the answer.")
+    # Serialized as "_attribution" to satisfy CC-BY-4.0 attribution requirement.
+    attribution: str = Field(
+        default=_OPEN_METEO_ATTRIBUTION,
+        alias="_attribution",
+        description="Open-Meteo CC BY 4.0 attribution (required by data licence).",
+    )
+
+
 class AIReportResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
