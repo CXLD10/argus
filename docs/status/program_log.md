@@ -4,6 +4,64 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 5 — F-022–F-023: Config Profiles, Health Endpoints — PHASE 3.5 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation of Session 5 (high-velocity mode)
+**Tasks:** F-022, F-023 complete — Phase 3.5 complete
+
+### What happened
+
+**F-022 — Configuration management + profile system**
+- `argus/core/config.py`: added `_deep_merge()` for section-level dict merging; added
+  `_load_yaml()` helper; extended `load_settings()` with profile support — reads
+  `ARGUS_PROFILE` env var, loads `config/settings.<profile>.yaml` from same directory as
+  base settings, deep-merges on top (ARGUS_* env vars still win). `ValidationError` from
+  Pydantic is now wrapped in `ConfigError` ("fails at startup" AC).
+- `config/settings.dev.yaml`: dev overrides — `LOG_LEVEL=DEBUG`, `ai.offline=true`,
+  dev-specific DB paths.
+- `config/settings.test.yaml`: test overrides — `ai.offline=true`, `LOG_LEVEL=WARNING`,
+  `/tmp/argus_test.db` paths.
+- Added 9 new tests to `tests/test_config.py` (23 total): profile loading, deep merge,
+  env-var-wins-over-profile, automatic ARGUS_PROFILE loading, invalid config raises
+  ConfigError, no credentials in settings.yaml.
+
+**F-023 — Health checks + readiness probes**
+- `argus/api/routers/health.py`: three endpoints —
+  - `GET /health`: liveness; always 200; moved from inline `app.py` to router.
+  - `GET /ready`: readiness; 200 if `Store.ping()` succeeds; 503 with detail on failure.
+    503 test uses file-as-parent-dir trick to block SQLite creation.
+  - `GET /status`: version, `store_accessible`, `last_analysis_run_at` (from new Store
+    method), CDSE quota (`cdse_bytes_today`, `cdse_daily_limit_gb`, `cdse_remaining_bytes`).
+- `argus/core/store.py`: added `ping()` (SELECT 1) and `get_last_analysis_run_at()`
+  (MAX(started_at) from analysis_runs).
+- `argus/api/schemas.py`: added `ReadyResponse`, `QuotaStatus`, `StatusResponse`.
+- `argus/api/app.py`: replaced inline `/health` with `health_router.router`.
+- `tests/test_health.py`: 18 tests covering all three endpoints, 503 path, quota fields.
+
+### Phase 3.5 definition of done — all items met
+
+- [x] F-018–F-023 acceptance criteria met
+- [x] `scripts/harness/run_all.sh` passes on the codebase
+- [x] All exceptions in argus/ use canonical types from `errors.py`
+- [x] All log output is structured JSON when `LOG_FORMAT=json`
+- [x] No unstructured errors or bare exceptions remain
+
+### Git
+
+- F-022: `bf55f14` — `feat(F-022): add profile-based config management with ARGUS_PROFILE env var`
+- F-023: `3c93c03` — `feat(F-023): add health, readiness, and status endpoints with quota reporting`
+
+### Test results
+
+503/503 offline tests pass, 2 live deselected. `ruff check` clean. `mypy` clean.
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 5 — F-018–F-021: API Contracts, Harness, Error Hierarchy, Logging
 
 **Agent:** Claude claude-sonnet-4-6

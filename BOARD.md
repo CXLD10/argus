@@ -70,8 +70,8 @@ Detailed specs: [`docs/features/phase-3.5.md`](docs/features/phase-3.5.md)
 | F-019 | Integration test framework + harness scripts | DONE | — | commit a5494dc |
 | F-020 | Structured error handling (error catalog + codes) | DONE | — | commit 055c5ff |
 | F-021 | Structured logging (JSON log format + trace IDs) | DONE | — | commit 41c8c8f |
-| F-022 | Config management (settings.yaml schema + env override) | TODO | — | dep F-001 |
-| F-023 | Health checks + readiness endpoints | TODO | — | dep F-015 |
+| F-022 | Config management (settings.yaml schema + env override) | DONE | — | commit bf55f14 |
+| F-023 | Health checks + readiness endpoints | DONE | — | commit 3c93c03 |
 
 ## Phase 4 — Domain D2: Inland Water Quality *(P0)*
 
@@ -178,6 +178,25 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-022, F-023 (Session 5 continued) — PHASE 3.5 COMPLETE
+
+- Did:
+  F-022: `argus/core/config.py` — `_deep_merge()`, `_load_yaml()`, profile loading via
+  `ARGUS_PROFILE` env var (loads `config/settings.<profile>.yaml` on top of base, then env
+  vars win). ValidationError wrapped in ConfigError (fails at startup). `config/settings.dev.yaml`
+  + `config/settings.test.yaml`. 9 new tests (23 total in test_config.py).
+  F-023: `argus/api/routers/health.py` — `GET /health` (liveness, moved from inline app.py),
+  `GET /ready` (503 if Store inaccessible), `GET /status` (version, store_accessible,
+  last_analysis_run_at, CDSE quota). `argus/core/store.py` — `ping()` + `get_last_analysis_run_at()`.
+  `argus/api/schemas.py` — `ReadyResponse`, `QuotaStatus`, `StatusResponse`. `tests/test_health.py`
+  (18 tests).
+- State: 503/503 offline tests pass, 2 live deselected. ruff clean. mypy clean. All ACs met.
+  Phase 3.5 definition of done: F-018–F-023 complete.
+- Git: main · F-022 bf55f14 · F-023 3c93c03
+- Quota: Zero.
+- Next: F-024 — Water-body model + targets + resolution gate (Phase 4, Domain D2)
+- Blockers: None. OQ-B still blocks F-040; OQ-D still blocks F-030.
 
 ### 2026-06-27 — implementation — F-018, F-019, F-020, F-021 (Session 5 continued)
 
