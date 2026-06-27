@@ -1,0 +1,25 @@
+{
+  "id": "tobago_2024",
+  "domain": "marine_oil",
+  "oil_type": "crude_medium",
+  "event_name": "Tobago 2024 spill",
+  "refs": {
+    "cdse_product_id": "S1A_IW_GRDH_1SDV_20240207T220000_20240207T220024_052485_065A84_0000",
+    "bbox": [-61.2, 10.8, -60.3, 11.5],
+    "sensing_date": "2024-02-07"
+  },
+  "event_time": "2024-02-07T22:00:00Z",
+  "truth_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-61.10, 11.00],
+        [-60.80, 11.00],
+        [-60.80, 11.30],
+        [-61.10, 11.30],
+        [-61.10, 11.00]
+      ]
+    ]
+  },
+  "provenance": "REMPEC incident report 2024-02. Truth geometry is an approximate bounding area derived from AIS diversion records and SAR expert annotation."
+}
