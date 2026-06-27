@@ -73,6 +73,39 @@ class Scene(BaseModel):
     attrs: dict[str, Any] = Field(default_factory=dict)
 
 
+class AnalysisRun(BaseModel):
+    """Execution record for one domain analysis over one scene (v2.0 canonical name)."""
+
+    id: str
+    aoi_id: str
+    domain_id: str
+    scene_id: str
+    started_at: datetime
+    completed_at: datetime | None = None
+    status: Literal["running", "complete", "failed"] = "running"
+    n_observations: int = 0
+
+
+class Observation(BaseModel):
+    """A detected or inferred environmental signal (v2.0 canonical name).
+
+    INV-3: every Observation carries evidence_class ∈ {measured, modeled, inferred}.
+    SAR dark-spot detections → evidence_class = "measured".
+    """
+
+    id: str
+    analysis_run_id: str
+    scene_id: str
+    obs_type: str  # e.g. "oil_slick", "chlorophyll_a"
+    evidence_class: Literal["measured", "modeled", "inferred"]
+    geometry: dict[str, Any]  # GeoJSON geometry
+    area_km2: float
+    confidence: float  # 0–1
+    status: Literal["candidate", "confirmed", "rejected"] = "candidate"
+    attrs: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:
     """Flatten all coordinate pairs from a GeoJSON geometry."""
     gtype = geometry.get("type", "")
