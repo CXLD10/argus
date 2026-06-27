@@ -350,6 +350,15 @@ class Store:
             row = conn.execute("SELECT * FROM predictions WHERE id = ?", (pred_id,)).fetchone()
         return _row_to_prediction(row) if row else None
 
+    def get_predictions_by_kind(self, kind: str) -> list[Prediction]:
+        """Return all Predictions with the specified kind, sorted by created_at ascending."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM predictions WHERE kind = ? ORDER BY created_at ASC",
+                (kind,),
+            ).fetchall()
+        return [_row_to_prediction(r) for r in rows]
+
     # ── ForecastFrame CRUD (scaffold — F-011) ────────────────────────────────
 
     def save_forecast_frame(self, frame: ForecastFrame) -> None:
