@@ -101,6 +101,8 @@ class Store:
                 "ALTER TABLE observations ADD COLUMN target_id TEXT",
                 "ALTER TABLE observations ADD COLUMN value REAL",
                 "ALTER TABLE observations ADD COLUMN unit TEXT",
+                # F-029: skill gate column
+                "ALTER TABLE skill_reports ADD COLUMN passed_gate INTEGER NOT NULL DEFAULT 0",
             ):
                 with contextlib.suppress(sqlite3.OperationalError):
                     conn.execute(_stmt)
@@ -292,14 +294,15 @@ class Store:
         f1: float,
         n_observations: int,
         created_at: datetime,
+        passed_gate: bool = False,
     ) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO skill_reports
                     (id, predictor_id, eval_case_id, precision, recall, f1,
-                     n_observations, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     n_observations, created_at, passed_gate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     report_id,
@@ -310,6 +313,7 @@ class Store:
                     f1,
                     n_observations,
                     created_at.isoformat(),
+                    int(passed_gate),
                 ),
             )
 
@@ -318,6 +322,15 @@ class Store:
             rows = conn.execute(
                 "SELECT * FROM skill_reports WHERE eval_case_id = ?",
                 (eval_case_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_skill_reports_by_predictor(self, predictor_id: str) -> list[dict]:
+        """Return all SkillReports for a predictor, sorted by created_at ascending."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM skill_reports WHERE predictor_id = ? ORDER BY created_at ASC",
+                (predictor_id,),
             ).fetchall()
         return [dict(r) for r in rows]
 
