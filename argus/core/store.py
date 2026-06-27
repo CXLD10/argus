@@ -12,7 +12,15 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from argus.core.models import AnalysisRun, ForecastFrame, Observation, Prediction, Scene
+from argus.core.models import (
+    AnalysisRun,
+    ExposureLayer,
+    ForecastFrame,
+    ImpactAssessment,
+    Observation,
+    Prediction,
+    Scene,
+)
 
 
 class Store:
@@ -118,6 +126,27 @@ class Store:
                     grid_ref        TEXT,
                     particle_count  INTEGER NOT NULL DEFAULT 0,
                     stats           TEXT NOT NULL DEFAULT '{}'
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS exposure_layers (
+                    id          TEXT PRIMARY KEY,
+                    name        TEXT NOT NULL,
+                    layer_type  TEXT NOT NULL,
+                    geometry    TEXT NOT NULL,
+                    attrs       TEXT NOT NULL DEFAULT '{}',
+                    created_at  TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS impact_assessments (
+                    id                  TEXT PRIMARY KEY,
+                    prediction_id       TEXT NOT NULL,
+                    exposure_layer_id   TEXT NOT NULL,
+                    valid_at            TEXT NOT NULL,
+                    eta_hours           REAL NOT NULL,
+                    metrics             TEXT NOT NULL DEFAULT '{}',
+                    created_at          TEXT NOT NULL
                 )
             """)
 
@@ -349,6 +378,60 @@ class Store:
             ).fetchall()
         return [_row_to_frame(r) for r in rows]
 
+    # ── ExposureLayer CRUD ────────────────────────────────────────────────────
+
+    def save_exposure_layer(self, layer: ExposureLayer) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO exposure_layers
+                    (id, name, layer_type, geometry, attrs, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    layer.id,
+                    layer.name,
+                    layer.layer_type,
+                    json.dumps(layer.geometry),
+                    json.dumps(layer.attrs),
+                    layer.created_at.isoformat(),
+                ),
+            )
+
+    def get_exposure_layers(self) -> list[ExposureLayer]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT * FROM exposure_layers").fetchall()
+        return [_row_to_exposure_layer(r) for r in rows]
+
+    # ── ImpactAssessment CRUD ─────────────────────────────────────────────────
+
+    def save_impact_assessment(self, ia: ImpactAssessment) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO impact_assessments
+                    (id, prediction_id, exposure_layer_id, valid_at, eta_hours,
+                     metrics, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    ia.id,
+                    ia.prediction_id,
+                    ia.exposure_layer_id,
+                    ia.valid_at.isoformat(),
+                    ia.eta_hours,
+                    json.dumps(ia.metrics),
+                    ia.created_at.isoformat(),
+                ),
+            )
+
+    def get_impact_assessments_for_prediction(self, pred_id: str) -> list[ImpactAssessment]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM impact_assessments WHERE prediction_id = ?", (pred_id,)
+            ).fetchall()
+        return [_row_to_impact_assessment(r) for r in rows]
+
     # ── Quota helpers ─────────────────────────────────────────────────────────
 
     def daily_bytes_total(self, on: datetime) -> int:
@@ -442,4 +525,27 @@ def _row_to_frame(row: sqlite3.Row) -> ForecastFrame:
         grid_ref=row["grid_ref"],
         particle_count=row["particle_count"],
         stats=json.loads(row["stats"]),
+    )
+
+
+def _row_to_exposure_layer(row: sqlite3.Row) -> ExposureLayer:
+    return ExposureLayer(
+        id=row["id"],
+        name=row["name"],
+        layer_type=row["layer_type"],
+        geometry=json.loads(row["geometry"]),
+        attrs=json.loads(row["attrs"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _row_to_impact_assessment(row: sqlite3.Row) -> ImpactAssessment:
+    return ImpactAssessment(
+        id=row["id"],
+        prediction_id=row["prediction_id"],
+        exposure_layer_id=row["exposure_layer_id"],
+        valid_at=datetime.fromisoformat(row["valid_at"]),
+        eta_hours=row["eta_hours"],
+        metrics=json.loads(row["metrics"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
     )

@@ -1,0 +1,19 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Tobago Marine Protected Area (representative)",
+    "layer_type": "marine_protected_area"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-61.38, 11.05],
+        [-61.15, 11.05],
+        [-61.15, 11.25],
+        [-61.38, 11.25],
+        [-61.38, 11.05]
+      ]
+    ]
+  }
+}

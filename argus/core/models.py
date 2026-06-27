@@ -165,6 +165,29 @@ class ForecastFrame(BaseModel):
     stats: dict[str, Any] = Field(default_factory=dict)  # min/mean/max drift distance
 
 
+class ExposureLayer(BaseModel):
+    """A static spatial layer representing something that can be impacted."""
+
+    id: str
+    name: str
+    layer_type: Literal["coastline", "marine_protected_area"]
+    geometry: dict[str, Any]  # GeoJSON geometry (LineString or Polygon)
+    attrs: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class ImpactAssessment(BaseModel):
+    """ETA + quantified impact for one trajectory prediction × exposure layer pair."""
+
+    id: str
+    prediction_id: str
+    exposure_layer_id: str
+    valid_at: datetime  # valid_at of the first intersecting ForecastFrame (= ETA)
+    eta_hours: float  # hours from prediction t0 to first intersection
+    metrics: dict[str, Any]  # coast_length_km | mpa_area_km2
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:
     """Flatten all coordinate pairs from a GeoJSON geometry."""
     gtype = geometry.get("type", "")

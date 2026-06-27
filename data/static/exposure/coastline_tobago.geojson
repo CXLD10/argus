@@ -1,0 +1,16 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Tobago coastline (simplified)",
+    "layer_type": "coastline"
+  },
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [-61.50, 11.15],
+      [-61.35, 11.10],
+      [-61.20, 11.05],
+      [-61.00, 10.95]
+    ]
+  }
+}
