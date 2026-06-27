@@ -7,12 +7,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request
 
+from argus.ai.anomaly_explain import AnomalyExplainer
 from argus.ai.base import Scope
 from argus.ai.client import ArgusAIClient
 from argus.ai.grounding import GroundingGuard
 from argus.ai.query import QueryPipeline
 from argus.ai.reports import SituationReporter
-from argus.api.schemas import AIReportResponse, QueryRequest, QueryResponse
+from argus.api.schemas import AIReportResponse, ExplanationResponse, QueryRequest, QueryResponse
 from argus.core.store import Store
 
 router = APIRouter()
@@ -49,6 +50,41 @@ def get_waterbody_report(target_id: str, request: Request) -> AIReportResponse:
 
     return AIReportResponse(
         text=result.text,
+        citations=result.citations,
+        model=result.model,
+    )
+
+
+@router.get(
+    "/anomaly/{prediction_id}/explanation",
+    response_model=ExplanationResponse,
+    response_model_by_alias=True,
+    tags=["ai"],
+)
+def get_anomaly_explanation(prediction_id: str, request: Request) -> ExplanationResponse:
+    """Generate a grounded advisory explanation for an anomaly prediction.
+
+    Output contains a candidate HYPOTHESIS and recommended ADVISORY actions.
+    This is advisory only — no automated action is ever taken (human-in-the-loop).
+    Falls back to a deterministic template when ARGUS_AI_OFFLINE=true.
+    """
+    from fastapi import HTTPException
+
+    db_path: Path = request.app.state.db_path
+    store = Store(db_path)
+    client = ArgusAIClient()
+    guard = GroundingGuard()
+    explainer = AnomalyExplainer(client, guard, store)
+
+    try:
+        result = explainer.explain(prediction_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return ExplanationResponse(
+        hypothesis=result.hypothesis,
+        advisory=result.advisory,
+        confidence=result.confidence,
         citations=result.citations,
         model=result.model,
     )

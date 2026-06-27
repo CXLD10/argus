@@ -99,6 +99,22 @@ class PredictionListResponse(BaseModel):
     )
 
 
+class ExplanationResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    hypothesis: str = Field(description="Candidate explanation for the anomaly (advisory).")
+    advisory: str = Field(description="Recommended sampling or follow-up actions (advisory only).")
+    confidence: str = Field(description="Confidence label: low | medium | high.")
+    citations: list[str] = Field(description="Record IDs cited in the explanation.")
+    model: str = Field(description="Pinned model version used to generate the explanation.")
+    # Serialized as "_attribution" to satisfy CC-BY-4.0 attribution requirement.
+    attribution: str = Field(
+        default=_OPEN_METEO_ATTRIBUTION,
+        alias="_attribution",
+        description="Open-Meteo CC BY 4.0 attribution (required by data licence).",
+    )
+
+
 class QueryRequest(BaseModel):
     question: str = Field(description="Natural-language question to ask the AI assistant.")
 
