@@ -66,10 +66,10 @@ Detailed specs: [`docs/features/phase-3.5.md`](docs/features/phase-3.5.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-018 | API contract finalization (OpenAPI spec + versioning) | TODO | — | dep F-015 |
-| F-019 | Integration test framework + harness scripts | TODO | — | dep F-017 |
-| F-020 | Structured error handling (error catalog + codes) | TODO | — | dep F-015 |
-| F-021 | Structured logging (JSON log format + trace IDs) | TODO | — | dep F-000 |
+| F-018 | API contract finalization (OpenAPI spec + versioning) | DONE | — | commit 65cdf72 |
+| F-019 | Integration test framework + harness scripts | DONE | — | commit a5494dc |
+| F-020 | Structured error handling (error catalog + codes) | DONE | — | commit 055c5ff |
+| F-021 | Structured logging (JSON log format + trace IDs) | DONE | — | commit 41c8c8f |
 | F-022 | Config management (settings.yaml schema + env override) | TODO | — | dep F-001 |
 | F-023 | Health checks + readiness endpoints | TODO | — | dep F-015 |
 
@@ -178,6 +178,32 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-018, F-019, F-020, F-021 (Session 5 continued)
+
+- Did:
+  F-018: `argus/api/schemas.py` — all response models with `description=` on every field;
+  `_attribution` alias via `Field(alias=...)` + `populate_by_name=True`; `HealthResponse`,
+  `ObservationSchema`, `PredictionSchema`, `PredictionListResponse` finalized. `argus/api/app.py`
+  — version from `__version__`, `openapi_tags` added. `docs/api/API_SPEC.md` — comprehensive
+  D1 API spec with all endpoints, schemas, breaking-change policy, attribution requirements.
+  `tests/test_api_contracts.py` (36 tests, uses `model_validate()` as schema assertion).
+  F-019: `scripts/harness/check_architecture.py` — VAL-008 (copyleft regex), VAL-010 (live
+  network), VAL-017 (hardcoded oil types) validators; `scripts/harness/check_spec_health.py`
+  — VAL-001/VAL-002/VAL-013; shell wrappers `validate.sh`, `spec_health.sh`, `run_all.sh`.
+  `tests/conftest.py` — `tmp_store`, `mock_open_meteo`, `mock_cdse_auth`, `mock_anthropic`
+  fixtures. `tests/harness/test_validators.py` (21 tests). Fixed `docs/features/phase-11.md`
+  F-056 missing AC section.
+  F-020: `argus/core/errors.py` — 15-class ArgusError hierarchy with sub-hierarchies
+  (QuotaExceeded⊂Acquisition, BelowResolution⊂AOI, ObservationTypeError⊂ArgusError+ValueError).
+  Updated all argus modules to import from errors.py. `tests/test_error_handling.py` (29 tests).
+  F-021: `argus/core/logging.py` — `_JsonFormatter`, `_TextFormatter`, `get_logger()`,
+  `bind_run_id()`, `current_run_id()` (thread-local). `tests/test_logging.py` (19 tests).
+- State: 476/476 offline tests pass, 2 live deselected. ruff clean. mypy clean. All ACs met.
+- Git: main · F-018 65cdf72 · F-019 a5494dc · F-020 055c5ff · F-021 41c8c8f
+- Quota: Zero.
+- Next: F-022 — Config management (settings.yaml schema + env override profiles)
+- Blockers: None.
 
 ### 2026-06-27 — implementation — F-014, F-015, F-016, F-017 (Session 5 continued) — CP-1 COMPLETE
 

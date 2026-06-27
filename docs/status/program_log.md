@@ -4,6 +4,80 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 5 — F-018–F-021: API Contracts, Harness, Error Hierarchy, Logging
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation of Session 5 (high-velocity mode)
+**Tasks:** F-018, F-019, F-020, F-021 complete — Phase 3.5 (first 4 features)
+
+### What happened
+
+**F-018 — API contract finalization**
+- `argus/api/schemas.py`: all response models with `description=` on every field; `_attribution`
+  alias via `Field(alias=...)` + `populate_by_name=True` + `response_model_by_alias=True`;
+  `HealthResponse` uses `default_factory=lambda: __version__`; `PredictionListResponse` carries
+  `_attribution` alias per Open-Meteo CC BY 4.0 licence requirement.
+- `argus/api/app.py`: version now from `argus.__version__`; `openapi_tags` added for structured
+  OpenAPI spec.
+- `docs/api/API_SPEC.md`: comprehensive D1 API specification — all endpoints, request/response
+  schemas, error codes, breaking-change policy, attribution requirements.
+- `tests/test_api_contracts.py` (36 tests): uses `model_validate()` as schema contract assertion;
+  tests `/openapi.json` endpoint, `_attribution` field presence, sentinel test verifies
+  `model_validate()` raises `ValidationError` on a structurally broken response.
+
+**F-019 — Integration test framework + harness scripts**
+- `scripts/harness/check_architecture.py` (from stub): VAL-008 uses regex
+  `r"^(?:import opendrift|from opendrift)"` (not string match — avoids docstring false positives);
+  VAL-010 checks live HTTP calls in tests/; VAL-017 checks hardcoded oil type strings in argus/.
+- `scripts/harness/check_spec_health.py`: VAL-001 (FR coverage), VAL-002 (feature-has-tasks),
+  VAL-013 (AC non-empty). Uses `"\n" + spec_file.read_text()` trick for start-of-file regex match.
+- Shell wrappers: `validate.sh`, `spec_health.sh`, `run_all.sh`.
+- `tests/conftest.py`: `tmp_store` (SQLite), `mock_open_meteo`, `mock_cdse_auth` (responses
+  library), `mock_anthropic` (MagicMock) shared fixtures.
+- `tests/harness/test_validators.py` (21 tests): tests VAL-008/010/017/001/002/013 catch
+  synthetic violations and pass on real codebase. String-split trick avoids test source false
+  positives (`"requests." + "get(...)"`).
+- Fixed `docs/features/phase-11.md` F-056 missing AC section (real spec gap caught by VAL-002).
+
+**F-020 — Structured error handling**
+- `argus/core/errors.py`: 15-class hierarchy rooted at `ArgusError(Exception)`. Sub-hierarchies:
+  `QuotaExceededError ⊂ AcquisitionError`, `ProcessApiError ⊂ AcquisitionError`,
+  `BelowResolutionError ⊂ AOIError`, `ObservationTypeError(ArgusError, ValueError)` (dual
+  inheritance: Pydantic v2 `@field_validator` only catches ValueError/AssertionError).
+- All argus modules updated to import from `argus.core.errors` (re-exports in existing modules
+  preserve external import paths). `runner.py` raises `SimulationError` (was RuntimeError).
+  `models.py` raises `ObservationTypeError` (was ValueError). `acquire.py` raises
+  `QuotaExceededError` on first quota check.
+- `tests/test_error_handling.py` (29 tests): parametrized hierarchy check (all 15 classes);
+  sub-hierarchy assertions; catchability; actionable message assertions; integration tests
+  (AOI loader, Pydantic ValidationError wrapping, runner SimulationError).
+
+**F-021 — Structured logging**
+- `argus/core/logging.py`: `_JsonFormatter` emits one JSON object per line with `ts` (ISO 8601 Z),
+  `level`, `module`, `event`, extra fields, optional `run_id`. `_TextFormatter` for dev:
+  `ts LEVEL module: event key=val`. `get_logger(name)`: controlled by `LOG_FORMAT` env var;
+  sets `propagate=False`; idempotent (tracks configured names). Thread-local `bind_run_id()` /
+  `current_run_id()` wire correlation IDs into every log record automatically.
+- `tests/test_logging.py` (19 tests): JSON validity, all field names, ISO 8601 ts format,
+  correlation ID bind/unbind, text format, no-print sentinel.
+
+### Git
+
+- F-018: `65cdf72` — `feat(F-018): finalize D1 API contracts, add OpenAPI spec and contract tests`
+- F-019: `a5494dc` — `feat(F-019): add integration test framework and harness validation scripts`
+- F-020: `055c5ff` — `feat(F-020): add structured error hierarchy, canonical ArgusError base, no bare exceptions`
+- F-021: `41c8c8f` — `feat(F-021): add structured JSON logging framework with correlation IDs`
+
+### Test results
+
+476/476 offline tests pass, 2 live deselected. `ruff check` clean. `mypy` clean (51 source files).
+
+### Quota used
+
+Zero.
+
+---
+
 ## 2026-06-27 — Session 5 — F-014–F-017: Impact Assessment, API, Web Viewer, Alerts — CP-1 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
