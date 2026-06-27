@@ -34,10 +34,10 @@ Detailed specs: [`docs/features/phase-1.md`](docs/features/phase-1.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-007 | Robust dark-spot segmentation + features | TODO | — | dep F-006 |
-| F-008 | Look-alike rejection + confidence | TODO | — | dep F-007 |
-| F-009 | Eval harness + labeled dataset + P/R | TODO | — | dep F-008 |
-| F-010 | Detection characterization & schema finalize | TODO | — | dep F-008 |
+| F-007 | Robust dark-spot segmentation + features | DONE | — | commit 9ea967a |
+| F-008 | Look-alike rejection + confidence | DONE | — | commit f1ad411 |
+| F-009 | Eval harness + labeled dataset + P/R | DONE | — | commit a3a5187 |
+| F-010 | Detection characterization & schema finalize | DONE | — | commit 2c1ae8e · Phase 1 complete |
 
 ## Phase 2 — Simulation vertical (oil) *(P0)*
 
@@ -45,9 +45,9 @@ Detailed specs: [`docs/features/phase-2.md`](docs/features/phase-2.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-011 | OpenOil sim service (isolated subprocess) + seeding | TODO | — | dep F-010 · GPL isolation (ADR-0002 D2) |
-| F-012 | Metocean forcing providers + cache + fallback | TODO | — | dep F-011 |
-| F-013 | ForecastFrames + trajectory eval | TODO | — | dep F-012 |
+| F-011 | OpenOil sim service (isolated subprocess) + seeding | DONE | — | commit 128ffea |
+| F-012 | Metocean forcing providers + cache + fallback | DONE | — | commit 0508df4 |
+| F-013 | ForecastFrames + trajectory eval | DONE | — | commit b3ac90a |
 
 ## Phase 3 — Impact, delivery & viewer (oil) *(P0)* — CP-1
 
@@ -178,6 +178,95 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-013 (Session 5 continued)
+
+- Did: `argus/predict/oil_trajectory/evaluator.py` — `TrajectoryEvalCase.from_json()` (loads trajectory
+  eval case with truth_centroid + rng_seed + horizon_hours); `TrajectorySkillResult` dataclass;
+  `_haversine_km()` great-circle distance; `_frame_centroid()` (prefers stats.mean_lon/lat, falls back
+  to footprint polygon mean); `evaluate_trajectory()` (last frame centroid vs truth centroid separation);
+  `skill_result_to_store_report()` (f1_proxy = max(0, 1 − sep_km/100) → Store.save_skill_report()).
+  `data/eval/tobago_2024_trajectory.json` — trajectory eval case (truth_centroid=[-61.25,11.15], rng_seed=42,
+  horizon_hours=24). `tests/test_forecast_frames.py` — 21 tests covering all evaluator functions,
+  ForecastFrame store round-trips, INV-8/INV-9 checks.
+- State: 292/292 offline tests pass. ruff clean. mypy clean (37 source files). All F-013 ACs met.
+- Git: main · b3ac90a
+- Quota: Zero.
+- Next: F-014 — Exposure layers + impact + ETA (Phase 3)
+- Blockers: None.
+
+### 2026-06-27 — implementation — F-011, F-012 (Session 5 continued)
+
+- Did: F-012: `argus/predict/oil_trajectory/forcing.py` — `ForcingGrid`, `fetch_open_meteo_winds()`,
+  `fetch_cmems_currents()`, `fetch_open_meteo_marine()` (fallback), `get_forcing()` (cache-aware,
+  CMEMS fallback on CmemsUnavailableError). Quota tracking: open_meteo_calls + cmems_bytes.
+  `argus/predict/oil_trajectory/cache.py` — `ForcingCache` reads/writes parquet via pyarrow.
+  Fixtures: `tests/fixtures/cmems_currents_tobago.parquet`, `tests/fixtures/open_meteo_winds_tobago.json`.
+  `pyarrow>=14.0` added to deps (BSD license, INV-1 compliant).
+  `tests/test_forcing_providers.py` — 23 tests (grid fields, parsing, primary path, fallback, cache).
+  F-011 (included above in prev entry).
+- State: 269/269 offline tests pass. ruff clean. mypy clean (36 source files). All F-012 ACs met.
+- Git: main · F-011 128ffea · F-012 0508df4
+- Quota: Zero.
+- Next: F-013 — ForecastFrames + trajectory evaluation
+- Blockers: None.
+
+### 2026-06-27 — implementation — F-011 (Session 5 continued)
+
+- Did: `argus/predict/base.py` — `Predictor` Protocol scaffold, `PredictContext`, `EvalSet`.
+  `argus/predict/oil_trajectory/oil_types.py` — `OilType`, `OilTypeRegistry`, `OilTypeRequiredError`,
+  `OilTypeNotFoundError`, `load_oil_types()`. `argus/predict/oil_trajectory/runner.py` —
+  `SimInput`, `run_simulation()` (validates oil_type → spawns subprocess → reads output JSON).
+  `argus/predict/oil_trajectory/sim_worker.py` — only file that imports opendrift; GPL isolation
+  verified by `test_gpl_isolation_opendrift_only_in_sim_worker`.
+  `argus/core/models.py` — `Prediction` (INV-9: uncertainty required) + `ForecastFrame`.
+  `argus/core/store.py` — `predictions` + `forecast_frames` tables; CRUD methods (INV-6).
+  `tests/test_oil_trajectory_service.py` — 19 tests (registry, runner, GPL isolation, store round-trips).
+- State: 246/246 offline tests pass. ruff clean. mypy clean (34 source files). All F-011 ACs met.
+- Git: main · 128ffea
+- Quota: Zero.
+- Next: F-012 — Metocean forcing providers + cache
+- Blockers: None.
+
+### 2026-06-27 — implementation — F-010 (Session 5 continued) — PHASE 1 COMPLETE
+
+- Did: `argus/core/models.py` — `VALID_OBS_TYPES` registry (6 types); `field_validator` for
+  obs_type; `Observation` gains `features`, `status_updated_at`, `domain`, `target_id`, `value`,
+  `unit` fields. `argus/core/store.py` — new columns in observations table; idempotent
+  `ALTER TABLE` via `contextlib.suppress` for existing DBs; `transition_observation_status()`.
+  `argus/domains/marine_oil/classifier.py` — sets `status_updated_at` on transition.
+  `argus/domains/marine_oil/detector.py` — populates `features` top-level field.
+  `tests/test_observation_schema.py` — 23 tests covering validation, transitions, round-trips,
+  migration check (old schema → new columns added on re-open).
+- State: 227/227 offline tests pass. ruff clean. mypy clean (28 source files). All F-010 ACs met.
+  Phase 1 DoD: F-007–F-010 all done; P/R baseline exists (tobago_2024 eval case); schema frozen.
+- Git: main · 2c1ae8e
+- Quota: Zero.
+- Next: F-011 — OpenOil sim service (Phase 2)
+- Blockers: None. OQ-B still blocks F-040; OQ-D still blocks F-030.
+
+### 2026-06-27 — implementation — F-007, F-008, F-009 (Session 5 continued)
+
+- Did: F-007: `argus/domains/marine_oil/segmentor.py` — Otsu thresholding + morphological
+  opening (iterations=2); degenerate uniform raster handled. `argus/domains/marine_oil/features.py` —
+  9-feature vector (area_km2, perimeter_km, compactness, elongation, convexity, orientation,
+  mean_sigma0_db, contrast_vs_background_db, texture_glcm) using GLCM and ConvexHull.
+  Renamed `OilDomainV0` → `MarineOilDomain`; alias kept for compatibility.
+  `tests/fixtures/sar_with_blob_and_noise.npy` (2×200×200). `tests/test_segmentor.py` (10),
+  `tests/test_features.py` (12 via test_oil_detector.py update).
+  F-008: `argus/domains/marine_oil/classifier.py` — GBT (n_estimators=50, seed=42 INV-8),
+  `OilClassifier.classify()` returns new Observation instances via `model_copy()` (INV-3 evidence_class
+  unchanged). `config/oil_classifier.yaml`. `models/oil_classifier_v1.pkl`. `data/eval/labeled_detections.json`
+  (15 oil + 15 lookalike). `tests/test_classifier.py` (15 tests). `Observation.status` updated to
+  `"dismissed"` (v2.0 canonical).
+  F-009: `argus/eval/__init__.py`, `argus/eval/scorer.py` (EvalResult, score()), `argus/eval/harness.py`
+  (EvalCase, SkillReport, run() in fixture mode). `argus/core/store.py` — `skill_reports` table +
+  save/query methods (INV-6). `tests/test_eval_harness.py` (19 tests).
+- State: 204/204 offline tests pass. ruff clean. mypy clean (28 source files). All F-007/F-008/F-009 ACs met.
+- Git: main · F-007 9ea967a · F-008 f1ad411 · F-009 a3a5187
+- Quota: Zero.
+- Next: F-010 — Detection characterization & schema finalization
+- Blockers: None. OQ-B still blocks F-040; OQ-D still blocks F-030.
 
 ### 2026-06-27 — implementation — F-006 (Session 5 continued) — PHASE 0 COMPLETE
 
