@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -56,6 +56,20 @@ class SourceRef(BaseModel):
     footprint: dict[str, Any]  # GeoJSON geometry
     polarizations: list[str]  # e.g. ["VV", "VH"]
     bytes_estimated: int | None = None
+    attrs: dict[str, Any] = Field(default_factory=dict)
+
+
+class Scene(BaseModel):
+    """A downloaded satellite product tied to an AOI — the unit of raster storage."""
+
+    id: str
+    product_id: str  # matches SourceRef.product_id
+    aoi_id: str
+    sensing_time: datetime
+    ingest_status: Literal["pending", "ready", "failed"]
+    artifact_path: str | None = None  # absolute path to the raster file on disk
+    bytes_or_calls: int = 0  # CDSE byte count for daily quota tracking
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     attrs: dict[str, Any] = Field(default_factory=dict)
 
 
