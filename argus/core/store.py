@@ -445,6 +445,20 @@ class Store:
             ).fetchone()
         return int(row[0]) if row else 0
 
+    def ping(self) -> bool:
+        """Return True if the store is accessible; raise on any error."""
+        with self._connect() as conn:
+            conn.execute("SELECT 1")
+        return True
+
+    def get_last_analysis_run_at(self) -> datetime | None:
+        """Return the started_at of the most recent AnalysisRun, or None if empty."""
+        with self._connect() as conn:
+            row = conn.execute("SELECT MAX(started_at) FROM analysis_runs").fetchone()
+        if row and row[0]:
+            return datetime.fromisoformat(row[0])
+        return None
+
 
 def _row_to_scene(row: sqlite3.Row) -> Scene:
     return Scene(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -120,3 +121,37 @@ class ImpactListResponse(BaseModel):
         alias="_attribution",
         description="Open-Meteo CC BY 4.0 attribution (required by data licence).",
     )
+
+
+# ── Health / readiness schemas ────────────────────────────────────────────────
+
+
+class ReadyResponse(BaseModel):
+    status: Literal["ready", "not_ready"] = Field(
+        description="'ready' if the store is accessible and config is valid."
+    )
+    reason: str | None = Field(
+        default=None,
+        description="Human-readable reason when status is 'not_ready'.",
+    )
+
+
+class QuotaStatus(BaseModel):
+    cdse_bytes_today: int = Field(description="CDSE bytes downloaded today (UTC date).")
+    cdse_daily_limit_gb: float = Field(
+        description="Configured CDSE daily quota in GB (from settings)."
+    )
+    cdse_remaining_bytes: int = Field(description="Estimated remaining CDSE bytes for today.")
+
+
+class StatusResponse(BaseModel):
+    version: str = Field(
+        default_factory=lambda: __version__,
+        description="Argus package version.",
+    )
+    store_accessible: bool = Field(description="True if the SQLite store responded to a ping.")
+    last_analysis_run_at: datetime | None = Field(
+        default=None,
+        description="Timestamp of the most recent AnalysisRun, or null if none have been run.",
+    )
+    quota: QuotaStatus = Field(description="Current quota consumption for external data sources.")
