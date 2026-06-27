@@ -284,3 +284,42 @@ def test_impact_empty_aoi(api_client: TestClient) -> None:
     resp = api_client.get("/aois/tobago/impact")
     assert resp.status_code == 200
     assert resp.json()["count"] == 0
+
+
+# ── F-016: Web Viewer ─────────────────────────────────────────────────────────
+
+
+def test_root_returns_200(api_client: TestClient) -> None:
+    resp = api_client.get("/")
+    assert resp.status_code == 200
+
+
+def test_root_returns_html(api_client: TestClient) -> None:
+    resp = api_client.get("/")
+    assert "text/html" in resp.headers["content-type"]
+
+
+def test_root_contains_argus_title(api_client: TestClient) -> None:
+    resp = api_client.get("/")
+    assert "Argus" in resp.text
+
+
+def test_static_css_served(api_client: TestClient) -> None:
+    resp = api_client.get("/static/style.css")
+    assert resp.status_code == 200
+
+
+def test_static_js_served(api_client: TestClient) -> None:
+    resp = api_client.get("/static/app.js")
+    assert resp.status_code == 200
+
+
+def test_viewer_loads_from_api_endpoints(api_client: TestClient) -> None:
+    # The JS (not the HTML) contains the API calls to /aois.
+    js = api_client.get("/static/app.js").text
+    assert "/aois" in js
+
+
+def test_viewer_references_leaflet(api_client: TestClient) -> None:
+    html = api_client.get("/").text
+    assert "leaflet" in html.lower()

@@ -5,9 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from argus.api.routers import aoi, impact, observations, predictions
 from argus.api.schemas import HealthResponse
+
+_STATIC_DIR = Path(__file__).parent / "static"
 
 
 def create_app(
@@ -37,5 +41,12 @@ def create_app(
     def health() -> HealthResponse:
         """Readiness probe — always returns 200 OK."""
         return HealthResponse()
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        """Serve the Argus dashboard."""
+        return FileResponse(_STATIC_DIR / "index.html")
+
+    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
     return app

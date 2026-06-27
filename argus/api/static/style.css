@@ -1,0 +1,151 @@
+/* Argus Environmental Intelligence Platform — dashboard styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0f1117;
+  color: #e2e8f0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #1a1d27;
+  border-bottom: 1px solid #2d3148;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #60a5fa;
+}
+
+#status-bar {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#map {
+  flex: 1;
+  background: #1e2130;
+}
+
+#sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: #1a1d27;
+  border-left: 1px solid #2d3148;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2d3148;
+}
+
+.panel h2 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  padding: 2px 0;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-oil { background: #7f1d1d; color: #fca5a5; }
+.badge-confirmed { background: #14532d; color: #86efac; }
+.badge-candidate { background: #713f12; color: #fde68a; }
+
+#eta-panel {
+  flex: 1;
+  padding: 14px 16px;
+  overflow-y: auto;
+}
+
+#eta-panel h2 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.eta-item {
+  background: #232640;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.eta-label {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+
+.eta-value {
+  color: #f87171;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.eta-metric {
+  color: #94a3b8;
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+
+footer {
+  padding: 6px 20px;
+  font-size: 0.68rem;
+  color: #475569;
+  background: #1a1d27;
+  border-top: 1px solid #2d3148;
+  flex-shrink: 0;
+}

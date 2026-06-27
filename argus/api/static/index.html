@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Argus — Environmental Intelligence</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<header>
+  <h1>Argus</h1>
+  <span id="aoi-name" style="color:#94a3b8;font-size:0.85rem"></span>
+  <span id="status-bar">Connecting…</span>
+</header>
+
+<div id="main">
+  <div id="map"></div>
+
+  <aside id="sidebar">
+    <!-- Detections panel -->
+    <div class="panel">
+      <h2>Detections</h2>
+      <div class="stat-row">
+        <span>Total</span>
+        <span class="stat-value" id="obs-count">—</span>
+      </div>
+      <div class="stat-row">
+        <span>Confirmed</span>
+        <span class="stat-value badge badge-confirmed" id="obs-confirmed">—</span>
+      </div>
+    </div>
+
+    <!-- Predictions panel -->
+    <div class="panel">
+      <h2>Trajectory</h2>
+      <div class="stat-row">
+        <span>Simulations</span>
+        <span class="stat-value" id="pred-count">—</span>
+      </div>
+      <div class="stat-row">
+        <span>Forecast frames</span>
+        <span class="stat-value" id="frame-count">—</span>
+      </div>
+    </div>
+
+    <!-- Impact / ETA panel -->
+    <div id="eta-panel">
+      <h2>Impact &amp; ETA</h2>
+      <div id="eta-items">
+        <div style="color:#475569;font-size:0.78rem">Loading…</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  Argus Environmental Intelligence Platform &mdash; data: Open-Meteo (CC BY 4.0) &bull; imagery: Copernicus/ESA
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
