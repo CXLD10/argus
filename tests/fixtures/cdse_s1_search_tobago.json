@@ -1,0 +1,68 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "S1A_IW_GRDH_1SDV_20240214T215412_20240214T215437_052653_065EDB_7C23.SAFE",
+      "collection": "SENTINEL-1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-62.0, 10.3], [-59.5, 10.3], [-59.5, 12.2], [-62.0, 12.2], [-62.0, 10.3]
+        ]]
+      },
+      "properties": {
+        "datetime": "2024-02-14T21:54:12.000Z",
+        "platform": "sentinel-1a",
+        "constellation": "sentinel-1",
+        "instruments": ["c-sar"],
+        "s1:product_type": "GRD",
+        "s1:polarizations": ["VV", "VH"],
+        "s1:instrument_mode": "IW",
+        "s1:orbit_state": "ascending",
+        "s1:resolution": "high"
+      },
+      "assets": {
+        "PRODUCT": {
+          "href": "s3://eodata/Sentinel-1/SAR/GRD/2024/2/14/S1A_IW_GRDH_1SDV_20240214T215412_20240214T215437_052653_065EDB_7C23.SAFE",
+          "type": "application/zip"
+        }
+      },
+      "links": []
+    },
+    {
+      "type": "Feature",
+      "id": "S1A_IW_GRDH_1SDV_20240207T215408_20240207T215433_052578_065C2A_4F91.SAFE",
+      "collection": "SENTINEL-1",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-62.2, 10.3], [-59.5, 10.3], [-59.5, 12.1], [-62.2, 12.1], [-62.2, 10.3]
+        ]]
+      },
+      "properties": {
+        "datetime": "2024-02-07T21:54:08.000Z",
+        "platform": "sentinel-1a",
+        "constellation": "sentinel-1",
+        "instruments": ["c-sar"],
+        "s1:product_type": "GRD",
+        "s1:polarizations": ["VV", "VH"],
+        "s1:instrument_mode": "IW",
+        "s1:orbit_state": "ascending",
+        "s1:resolution": "high"
+      },
+      "assets": {
+        "PRODUCT": {
+          "href": "s3://eodata/Sentinel-1/SAR/GRD/2024/2/7/S1A_IW_GRDH_1SDV_20240207T215408_20240207T215433_052578_065C2A_4F91.SAFE",
+          "type": "application/zip"
+        }
+      },
+      "links": []
+    }
+  ],
+  "context": {
+    "limit": 50,
+    "matched": 2,
+    "returned": 2
+  }
+}

@@ -44,6 +44,21 @@ class MonitorTarget(BaseModel):
     attrs: dict[str, Any] = Field(default_factory=dict)
 
 
+class SourceRef(BaseModel):
+    """Reference to a satellite product in an external catalogue (e.g. CDSE)."""
+
+    product_id: str
+    source: str  # "cdse"
+    collection: str  # "SENTINEL-1"
+    product_type: str  # "GRD"
+    sensor_mode: str  # "IW"
+    sensing_time: datetime
+    footprint: dict[str, Any]  # GeoJSON geometry
+    polarizations: list[str]  # e.g. ["VV", "VH"]
+    bytes_estimated: int | None = None
+    attrs: dict[str, Any] = Field(default_factory=dict)
+
+
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:
     """Flatten all coordinate pairs from a GeoJSON geometry."""
     gtype = geometry.get("type", "")

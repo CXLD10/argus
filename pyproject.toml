@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "pyyaml>=6.0",
     "shapely>=2.0",
+    "requests>=2.31",
 ]
 
 [project.scripts]
@@ -68,7 +69,7 @@ exclude = ["tests/"]
 # ── Pytest ────────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short -m 'not live'"
 markers = [
     "live: tests that make real network calls (deselected by default)",
 ]
