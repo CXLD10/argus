@@ -18,6 +18,7 @@ VALID_OBS_TYPES: frozenset[str] = frozenset(
         "cdom",
         "surface_temp",
         "inundation",
+        "bloom_presence",  # D2: inferred from elevated chl-a proxy
     }
 )
 
