@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from argus import __version__
 from argus.api.routers import aoi, impact, observations, predictions
 from argus.api.schemas import HealthResponse
 
@@ -18,16 +19,18 @@ def create_app(
     db_path: Path = Path("argus.db"),
     config_dir: Path = Path("config"),
 ) -> FastAPI:
-    """Create and configure the Argus FastAPI application.
-
-    Args:
-        db_path: Path to the SQLite database file.
-        config_dir: Directory containing AOI definitions and other config.
-    """
+    """Create and configure the Argus FastAPI application."""
     app = FastAPI(
         title="Argus Environmental Intelligence API",
-        version="0.1.0",
+        version=__version__,
         description="Water health intelligence: oil slicks, water quality, flooding, choke points.",
+        openapi_tags=[
+            {"name": "meta", "description": "Health and liveness probes."},
+            {"name": "aois", "description": "Area-of-interest management."},
+            {"name": "observations", "description": "Detected environmental observations."},
+            {"name": "predictions", "description": "Trajectory and forecast predictions."},
+            {"name": "impact", "description": "Exposure-layer impact assessments."},
+        ],
     )
     app.state.db_path = db_path
     app.state.config_dir = config_dir
