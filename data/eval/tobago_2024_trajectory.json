@@ -1,0 +1,27 @@
+{
+  "id": "tobago_2024_trajectory",
+  "domain": "marine_oil",
+  "oil_type": "crude_medium",
+  "event_name": "Tobago oil spill — trajectory T+24h",
+  "refs": {
+    "bbox": [-61.5, 10.5, -60.0, 11.8],
+    "cdse_product_id": "S1A_IW_GRDH_1SDV_20240207T214532_20240207T214557_052499_065C3E_4F8C"
+  },
+  "event_time": "2024-02-07T00:00:00Z",
+  "rng_seed": 42,
+  "truth_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-61.4, 11.0],
+        [-61.1, 11.0],
+        [-61.1, 11.3],
+        [-61.4, 11.3],
+        [-61.4, 11.0]
+      ]
+    ]
+  },
+  "truth_centroid": [-61.25, 11.15],
+  "provenance": "Estimated from REMPEC 2024 post-spill analysis; T+24h drift based on reported trajectory. Not from in-situ measurement.",
+  "horizon_hours": 24
+}
