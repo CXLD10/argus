@@ -99,10 +99,10 @@ Detailed specs: [`docs/features/phase-6.md`](docs/features/phase-6.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-030 | Assistant scaffolding + grounding/citation guards | TODO | — | dep F-027/F-028 · no invented values |
-| F-031 | NL situation reports (grounded, cited) | TODO | — | dep F-030 |
-| F-032 | NL query (read-only; OQ-E resolved) | TODO | — | dep F-030 |
-| F-033 | Anomaly explanation / triage (advisory) | TODO | — | dep F-030, F-027 |
+| F-030 | Assistant scaffolding + grounding/citation guards | DONE | — | commit cae538e |
+| F-031 | NL situation reports (grounded, cited) | DONE | — | commit da441cd |
+| F-032 | NL query (read-only; OQ-E resolved) | DONE | — | commit f9699f8 |
+| F-033 | Anomaly explanation / triage (advisory) | DONE | — | commit 85e75b1 |
 
 ## Phase 7 — Platform Integration *(P0)* — CP-2
 
@@ -178,6 +178,38 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-27 — implementation — F-030–F-033 (Session 7) — PHASE 6 COMPLETE
+
+- Did:
+  F-030: `argus/ai/` scaffold — `base.py` (Scope, GroundedText, GroundedAnswer, AIReport, Assistant
+  protocol), `client.py` (ArgusAIClient; pinned model claude-sonnet-4-6; logged calls; lazy anthropic
+  import), `grounding.py` (GroundingGuard.validate(): citation existence in store + every factual
+  sentence must have [record_id]; raises GroundingError on violation), `fallback.py`
+  (generate_template_report for ARGUS_AI_OFFLINE=true), `__init__.py`.
+  pyproject.toml: `[ai]` optional extras group `anthropic>=0.30`.
+  Fixtures: `grounded_response.json`, `ungrounded_response.json`.
+  `tests/test_grounding_guard.py` (30 tests). Commit: cae538e
+  F-031: `argus/ai/reports.py` — SituationReporter (builds context from store obs+preds; calls LLM;
+  validates via guard; ARGUS_AI_OFFLINE fallback). `Store.get_observations_by_target(target_id,
+  since, obs_types)`. `argus/api/routers/ai.py`: GET /waterbody/{id}/report → AIReportResponse.
+  `argus/api/schemas.py`: AIReportResponse. Fixture: `report_wq_grounded.json`.
+  `tests/test_nl_reports.py` (18 tests). Commit: da441cd
+  F-032: `argus/ai/query.py` — QueryPipeline (2-step: translate→StoreQuery JSON → execute →
+  synthesize; _is_write_action() refuses without LLM call; _parse_store_query() robust JSON
+  extraction; offline GroundedAnswer). POST /query endpoint. QueryRequest / QueryResponse schemas.
+  `tests/test_nl_query.py` (23 tests). Commit: f9699f8
+  F-033: `argus/ai/anomaly_explain.py` — AnomalyExplainer (builds context from Prediction + source
+  obs; parses HYPOTHESIS/ADVISORY/CONFIDENCE from LLM response; offline template; raises ValueError
+  for unknown pred_id). GET /anomaly/{id}/explanation → ExplanationResponse (404 on missing).
+  ExplanationResponse schema. `tests/test_anomaly_explain.py` (20 tests). Commit: 85e75b1
+- State: All Phase 6 ACs met. 732/732 offline tests pass. ruff clean. mypy clean.
+  Phase 6 DoD: F-030–F-033 done; grounding guard rejects ungrounded in test; no live
+  Anthropic calls; ARGUS_AI_OFFLINE=true fallback works; AIReport citations non-empty.
+- Git: main · cae538e / da441cd / f9699f8 / 85e75b1
+- Quota: Zero.
+- Next: F-034 — WQ Exposure (Drinking Intakes / Recreation) + Impact (Phase 7)
+- Blockers: None.
 
 ### 2026-06-27 — implementation — F-027, F-028, F-029 (Session 6 continued) — PHASE 5 COMPLETE
 

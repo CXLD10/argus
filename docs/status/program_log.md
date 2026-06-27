@@ -4,6 +4,61 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-27 — Session 7 — F-030–F-033: AI Layer — PHASE 6 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Continuation session (high-velocity mode)
+**Tasks:** F-030, F-031, F-032, F-033 complete — Phase 6 (AI Layer) complete
+
+### What happened
+
+**F-030 — Assistant Scaffolding + Grounding Guard**
+- `argus/ai/base.py`: `Scope`, `GroundedText`, `GroundedAnswer`, `AIReport`, `Assistant` protocol.
+- `argus/ai/client.py`: `ArgusAIClient`; pinned model `claude-sonnet-4-6`; logged calls and tokens;
+  lazy `anthropic` import (no live calls in default test suite per INV-7).
+- `argus/ai/grounding.py`: `GroundingGuard.validate()` — two-check system: (1) every citation id
+  in `citations` must exist in store (as Observation or Prediction), (2) every factual sentence
+  (containing digit, risk label, measurement keyword) must have an inline `[record_id]` citation.
+  Raises `GroundingError` on any violation.
+- `argus/ai/fallback.py`: `is_offline()` checks `ARGUS_AI_OFFLINE` env var; `generate_template_report()`
+  produces non-LLM grounded text from store observations. Factual value sentences include `[obs_id]` tags.
+- `pyproject.toml`: `[ai]` optional extras `anthropic>=0.30`.
+- Fixtures: `tests/fixtures/ai/grounded_response.json`, `ungrounded_response.json`.
+- 30 tests. Commit: cae538e
+
+**F-031 — NL Situation Reports (Grounded, Cited)**
+- `argus/ai/reports.py`: `SituationReporter` — queries store for recent obs and predictions, builds
+  JSON context, calls `ArgusAIClient.complete()` with system prompt, validates via `GroundingGuard`.
+  Falls back to `generate_template_report()` when `ARGUS_AI_OFFLINE=true`.
+- `argus/core/store.py`: added `get_observations_by_target(target_id, since, obs_types)`.
+- `argus/api/routers/ai.py`: `GET /waterbody/{id}/report` → `AIReportResponse`.
+- `argus/api/schemas.py`: `AIReportResponse(text, citations, model, _attribution)`.
+- Fixture: `tests/fixtures/ai/report_wq_grounded.json`.
+- 18 tests (offline mode, mocked LLM grounded passes + ungrounded raises, API endpoint). Commit: da441cd
+
+**F-032 — NL Query (Read-Only)**
+- `argus/ai/query.py`: `QueryPipeline` — (1) `_is_write_action()` checks keywords and returns polite
+  refusal without any LLM call; (2) 2-step pipeline: translate question to StoreQuery JSON (LLM call 1),
+  execute StoreQuery against store, synthesize grounded answer (LLM call 2); (3) validate with guard.
+  `_parse_store_query()` extracts JSON from LLM prose robustly.
+- `POST /query` endpoint. `QueryRequest`/`QueryResponse` schemas.
+- 23 tests (write-action refusal no-LLM, anomaly query mocked 2-step, invented fact raises, offline). Commit: f9699f8
+
+**F-033 — Anomaly Explanation + Triage**
+- `argus/ai/anomaly_explain.py`: `AnomalyExplainer.explain(prediction_id)` — loads prediction and
+  source observations from store; builds context string; calls LLM with HYPOTHESIS/ADVISORY/CONFIDENCE
+  format; parses response into `AnomalyExplanation` dataclass; validates all factual sentences with guard.
+  Offline template cites prediction id directly. Raises `ValueError` for unknown prediction ids.
+- `GET /anomaly/{id}/explanation` → `ExplanationResponse(hypothesis, advisory, confidence, citations, model, _attribution)`.
+  Returns 404 for unknown prediction.
+- 20 tests (offline template, mocked LLM all ACs, ungrounded raises, missing pred 404). Commit: 85e75b1
+
+### Test counts: 732 / 732 pass (offline, no live API calls)
+### Phase 6 DoD: COMPLETE — all F-030–F-033 ACs met; grounding guard rejects ungrounded in test;
+### no live Anthropic API calls in default suite; ARGUS_AI_OFFLINE=true fallback works.
+
+---
+
 ## 2026-06-27 — Session 6 — F-027–F-029: WQ Prediction Engine — PHASE 5 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
