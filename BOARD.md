@@ -110,9 +110,9 @@ Detailed specs: [`docs/features/phase-7.md`](docs/features/phase-7.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-034 | WQ exposure (intakes/recreation) + impact | TODO | — | dep F-026 |
-| F-035 | Viewer + API extended to D2 | TODO | — | dep F-034, F-016 |
-| F-036 | Alerting + products for D2 — **CP-2 close** | TODO | — | dep F-035 · HAB early-warning |
+| F-034 | WQ exposure (intakes/recreation) + impact | DONE | — | commit a4c4351 |
+| F-035 | Viewer + API extended to D2 | DONE | — | commit a4c4351 |
+| F-036 | Alerting + products for D2 — **CP-2 close** | DONE | — | commit a4c4351 · Phase 7 complete |
 
 ## Phase 8 — Automation & Scheduling *(P1)*
 
@@ -178,6 +178,38 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-28 — implementation — F-034–F-036 (Session 8) — PHASE 7 COMPLETE
+
+- Did:
+  F-034: Extended `ExposureLayer.layer_type` to add `"drinking_intake"` and `"recreation_site"`.
+  Added `assess_wq_impact(prediction, water_body_geom, exposure_layers, ...)` to `assessor.py`:
+  checks if anomaly z_score or forecast value exceeds threshold, then intersects water body
+  polygon with WQ exposure layers; eta_hours=0 for anomaly, horizon_days*24 for forecast.
+  Metrics: `intakes_threatened=1` per intake layer, `recreation_sites_threatened=1` per rec layer.
+  `data/static/exposure/drinking_intakes_reference.geojson` + `recreation_sites_reference.geojson`
+  (both points inside reference lake polygon). `tests/test_wq_impact.py` (28 tests).
+  F-035: `Store.get_predictions_for_target(target_id, kind)` resolves predictions via source obs.
+  `Store.get_waterbody_targets()` returns distinct target_ids where domain='inland_wq'.
+  `argus/api/schemas.py` — `WaterbodyListResponse`. `argus/api/routers/waterbody.py` — three new
+  endpoints: `GET /waterbodies`, `GET /waterbody/{id}/observations`, `GET /waterbody/{id}/anomalies`.
+  `index.html` — WQ panel + AI report panel divs. `app.js` — `loadWaterbodies()`,
+  `loadWQTarget()`, `loadWQReport()`: fetch /waterbodies, render status dot + trend list
+  + anomaly count + AI report text; render water body polygon on map.
+  F-036: `Alert.details: dict[str, Any]` field (backwards-compatible); `to_payload()` includes
+  details when non-empty. `should_alert_hab()` dual-signal gate (anomaly sigma AND forecast value).
+  `create_hab_alert()` builds Alert with full details dict (target_id, anomaly_sigma,
+  bloom_risk_forecast, intakes_threatened, recreation_sites_threatened, horizon_days).
+  `export_wq_geojson()`, `export_wq_png()` (bloom-risk color scale via matplotlib),
+  `export_wq_summary()` (ranked by risk score), `export_wq_products()` orchestrator.
+  Fixed pre-existing unused-import lint issues in F-030/F-032/F-033 test files. `tests/test_wq_alert.py` (31 tests).
+- State: All Phase 7 ACs met. 791/791 offline tests pass. ruff clean. mypy clean.
+  Phase 7 DoD: F-034–F-036 done; HAB early-warning alert fires in offline test; D2 observations,
+  anomalies, AI report visible in viewer; D1+D2 both rendered on same map.
+- Git: main · a4c4351
+- Quota: Zero.
+- Next: F-037 — Per-domain tasking + scheduler (Phase 8). Requires ADR-0007 decision first.
+- Blockers: ADR-0007 (scheduler strategy) required before F-037. OQ-B blocks F-040.
 
 ### 2026-06-27 — implementation — F-030–F-033 (Session 7) — PHASE 6 COMPLETE
 

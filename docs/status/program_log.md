@@ -4,6 +4,59 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-28 — Session 8 — F-034–F-036: Platform Integration (D2) — PHASE 7 COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Single continuous session
+**Tasks:** F-034, F-035, F-036 complete — Phase 7 (Platform Integration) complete — CP-2 closed
+
+### What happened
+
+**F-034 — WQ Exposure + Impact Assessment**
+- Extended `ExposureLayer.layer_type` Literal to include `"drinking_intake"` and `"recreation_site"`.
+- Added `_prediction_exceeds_bloom_threshold()` and `assess_wq_impact()` to `argus/impact/assessor.py`.
+  The WQ assessor fires when anomaly sigma ≥ 2.5 (or forecast value ≥ 25.0 µg/L), then intersects
+  the water body polygon with each WQ exposure layer using shapely; returns one `ImpactAssessment`
+  per hit layer. ETA = 0h for anomaly, horizon_days×24h for forecast.
+- `data/static/exposure/drinking_intakes_reference.geojson` — Point at (-60.5005, 10.5005) inside reference lake.
+- `data/static/exposure/recreation_sites_reference.geojson` — Point at (-60.501, 10.5012) inside reference lake.
+- `tests/test_wq_impact.py`: 28 tests covering AC: intake inside lake + forecast above threshold → IA created;
+  no exposure → no IA; metrics correct; store round-trips.
+
+**F-035 — Viewer + API Extended to D2**
+- `Store.get_predictions_for_target(target_id, kind)` — joins predictions to obs via source_obs_ids.
+- `Store.get_waterbody_targets()` — distinct target_ids where domain='inland_wq'.
+- `argus/api/schemas.py` — `WaterbodyListResponse`.
+- `argus/api/routers/waterbody.py` — `GET /waterbodies`, `GET /waterbody/{id}/observations`,
+  `GET /waterbody/{id}/anomalies`.
+- `index.html` — added `#wq-panel` and `#report-panel` divs to sidebar.
+- `app.js` — `loadWaterbodies()`, `loadWQTarget(targetId)`, `loadWQReport(targetId)`:
+  fetches water body list, renders status dot + trend list (chl-a values) + anomaly count
+  + AI report; draws water body polygon on map colored by bloom-risk level.
+
+**F-036 — Alerting + Products for D2**
+- `Alert.details: dict[str, Any]` — backwards-compatible extra payload field.
+- `should_alert_hab(anomaly_pred, forecast_pred)` — dual-signal gate (AND condition).
+- `create_hab_alert(target_id, target_name, anomaly_pred, forecast_pred, ...)` — builds
+  Alert with water body name, anomaly sigma, bloom-risk forecast, intakes_threatened.
+- `export_wq_geojson()`, `export_wq_png()`, `export_wq_summary()`, `export_wq_products()`.
+- `tests/test_wq_alert.py`: 31 tests covering should_alert_hab gate, create_hab_alert payload
+  contents, send_alert delivery, all WQ product export functions.
+
+### State at end of session
+
+- 791/791 offline tests pass (was 732; +59 new tests). ruff clean. mypy clean.
+- Phase 7 definition of done: all ACs met. CP-2 closed.
+- Commit: main · a4c4351
+- Quota used: Zero (no live API calls).
+
+### Next
+
+F-037 — Per-domain tasking + scheduler (Phase 8). ADR-0007 decision required first.
+OQ-B (choke-point definition) still blocks F-040.
+
+---
+
 ## 2026-06-27 — Session 7 — F-030–F-033: AI Layer — PHASE 6 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
