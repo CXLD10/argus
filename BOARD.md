@@ -123,8 +123,8 @@ Note: requires ADR-0007 (scheduler) before F-037 starts.
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
 | F-037 | Per-domain tasking + scheduler (quota-aware) | DONE | — | commit 70fa768 |
-| F-038 | Incremental ingestion + idempotency + run history | TODO | — | dep F-037 |
-| F-039 | Observability (metrics + run dashboard) | TODO | — | dep F-038 |
+| F-038 | Incremental ingestion + idempotency + run history | DONE | — | commit dc39641 |
+| F-039 | Observability (metrics + run dashboard) | DONE | — | commit TBD |
 
 ## Phase 9 — Domains D3 (weather/hydro) & D4 (choke points) *(P1)* — CP-3
 
@@ -179,6 +179,23 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-28 — implementation — F-039 (Session 9 continued)
+
+- Did:
+  F-039: `RunSummary` schema (domain_id, aoi_id, last_run_at, last_run_status, scenes_fetched,
+  observations_created, bytes_used); extended `StatusResponse` with `domain_runs: list[RunSummary]`
+  and `open_meteo_calls_today: int`. Extended `GET /status` handler: calls `_build_domain_runs()`
+  which deduplicates run_history by (domain, aoi), newest first. Viewer `index.html`: added
+  "System Status" panel div. `app.js`: `loadSystemStatus()` fetches `/status`, renders quota
+  gauge (CDSE used/limit/remaining) + per-domain run list with status dot and counts.
+  `tests/test_observability.py`: 13 tests.
+- State: All F-039 ACs met. 859/859 tests pass. ruff clean. mypy clean.
+  Phase 8 DoD: F-037/F-038/F-039 all DONE.
+- Git: main · TBD
+- Quota: Zero.
+- Next: F-040 — D4 Choke Points (Phase 9). OQ-B resolved; unblocked.
+- Blockers: None.
 
 ### 2026-06-28 — implementation — F-037 (Session 9)
 

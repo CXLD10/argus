@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 
-from argus.api.schemas import HealthResponse, QuotaStatus, ReadyResponse, StatusResponse
+from argus.api.schemas import HealthResponse, QuotaStatus, ReadyResponse, RunSummary, StatusResponse
 from argus.core.config import load_settings
 from argus.core.store import Store
 
@@ -41,6 +41,7 @@ def status(request: Request) -> StatusResponse:
     store_accessible = False
     last_run_at: datetime | None = None
     cdse_bytes_today = 0
+    domain_runs: list[RunSummary] = []
 
     try:
         store = Store(db_path)
@@ -48,6 +49,7 @@ def status(request: Request) -> StatusResponse:
         store_accessible = True
         last_run_at = store.get_last_analysis_run_at()
         cdse_bytes_today = store.daily_bytes_total(datetime.now(UTC))
+        domain_runs = _build_domain_runs(store)
     except Exception:
         pass
 
@@ -62,4 +64,30 @@ def status(request: Request) -> StatusResponse:
             cdse_daily_limit_gb=settings.cdse.daily_quota_gb,
             cdse_remaining_bytes=remaining,
         ),
+        domain_runs=domain_runs,
+        open_meteo_calls_today=0,  # populated when D3 is implemented (F-041)
     )
+
+
+def _build_domain_runs(store: Store) -> list[RunSummary]:
+    """Summarise the most recent RunHistory entry per domain × AOI pair."""
+    all_runs = store.get_run_history(limit=500)
+    # Deduplicate: keep the newest (first, since sorted newest-first) per (domain, aoi).
+    seen: set[tuple[str, str]] = set()
+    summaries: list[RunSummary] = []
+    for run in all_runs:
+        key = (run.domain_id, run.aoi_id)
+        if key not in seen:
+            seen.add(key)
+            summaries.append(
+                RunSummary(
+                    domain_id=run.domain_id,
+                    aoi_id=run.aoi_id,
+                    last_run_at=run.created_at,
+                    last_run_status=run.status,
+                    scenes_fetched=run.scenes_fetched,
+                    observations_created=run.observations_created,
+                    bytes_used=run.bytes_used,
+                )
+            )
+    return summaries

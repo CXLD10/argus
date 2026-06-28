@@ -249,6 +249,52 @@ async function loadWaterbodies() {
   }
 }
 
+// ── System status panel (F-039) ───────────────────────────────────────────────
+
+async function loadSystemStatus() {
+  try {
+    const res = await fetch("/status");
+    if (!res.ok) return;
+    const s = await res.json();
+
+    const panel = document.getElementById("system-status-panel");
+    if (!panel) return;
+
+    const quota = s.quota || {};
+    const usedMB = ((quota.cdse_bytes_today || 0) / 1048576).toFixed(1);
+    const limitGB = (quota.cdse_daily_limit_gb || 1.0).toFixed(1);
+    const remMB   = ((quota.cdse_remaining_bytes || 0) / 1048576).toFixed(0);
+
+    let html = `<div style="font-size:0.7rem;color:#94a3b8;margin-bottom:6px">
+      CDSE: ${usedMB} MB used / ${limitGB} GB limit (${remMB} MB remaining)
+    </div>`;
+
+    if (s.last_analysis_run_at) {
+      html += `<div style="font-size:0.7rem;color:#94a3b8;margin-bottom:6px">
+        Last analysis: ${new Date(s.last_analysis_run_at).toLocaleString()}
+      </div>`;
+    }
+
+    if (s.domain_runs && s.domain_runs.length > 0) {
+      html += `<div style="font-size:0.7rem;color:#cbd5e1;margin-bottom:4px">Domain runs:</div>`;
+      for (const run of s.domain_runs) {
+        const ts = run.last_run_at ? new Date(run.last_run_at).toLocaleString() : "—";
+        const dot = run.last_run_status === "complete"
+          ? `<span style="color:#22c55e">●</span>`
+          : `<span style="color:#ef4444">●</span>`;
+        html += `<div style="font-size:0.65rem;color:#94a3b8;padding-left:8px">
+          ${dot} ${run.domain_id}/${run.aoi_id} — ${ts}
+          (${run.scenes_fetched} scenes, ${run.observations_created} obs)
+        </div>`;
+      }
+    }
+
+    panel.innerHTML = html;
+  } catch (err) {
+    console.warn("Status panel load failed:", err);
+  }
+}
+
 // ── AOI discovery + bootstrap ─────────────────────────────────────────────────
 
 async function bootstrap() {
@@ -270,6 +316,7 @@ async function bootstrap() {
       loadPredictions(aoi.id),
       loadImpact(aoi.id),
       loadWaterbodies(),
+      loadSystemStatus(),
     ]);
 
     updateStatus(`${aoi.name} — ready`);

@@ -197,6 +197,18 @@ class QuotaStatus(BaseModel):
     cdse_remaining_bytes: int = Field(description="Estimated remaining CDSE bytes for today.")
 
 
+class RunSummary(BaseModel):
+    """Last-run summary for one domain × AOI pair (F-039 observability)."""
+
+    domain_id: str
+    aoi_id: str
+    last_run_at: datetime | None = None
+    last_run_status: str | None = None
+    scenes_fetched: int = 0
+    observations_created: int = 0
+    bytes_used: int = 0
+
+
 class StatusResponse(BaseModel):
     version: str = Field(
         default_factory=lambda: __version__,
@@ -208,3 +220,11 @@ class StatusResponse(BaseModel):
         description="Timestamp of the most recent AnalysisRun, or null if none have been run.",
     )
     quota: QuotaStatus = Field(description="Current quota consumption for external data sources.")
+    domain_runs: list[RunSummary] = Field(
+        default_factory=list,
+        description="Last run summary per domain × AOI pair (from RunHistory).",
+    )
+    open_meteo_calls_today: int = Field(
+        default=0,
+        description="Estimated Open-Meteo API calls consumed today.",
+    )
