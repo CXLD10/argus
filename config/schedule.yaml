@@ -1,0 +1,23 @@
+# Argus — Schedule Configuration Template
+#
+# Copy or extend this file for environment-specific schedules.
+# The scheduler section in settings.yaml also controls whether scheduling is enabled.
+#
+# job_id:        Unique identifier. Used to trigger, unschedule, and log individual jobs.
+# domain_id:     Must match a registered domain_id in argus.tasking.runner._load_domain().
+# aoi_id:        Must match a file in config/aois/<aoi_id>.geojson.
+# cadence_hours: How often to run (in hours). Must be >= 1.
+# enabled:       Set false to register but not activate the job.
+
+jobs:
+  - job_id: "marine_oil_tobago"
+    domain_id: "marine_oil"
+    aoi_id: "tobago"
+    cadence_hours: 24
+    enabled: false   # enable when CDSE credentials are configured
+
+  - job_id: "inland_wq_reference"
+    domain_id: "inland_wq"
+    aoi_id: "reference_region"
+    cadence_hours: 120   # ~5 days (Sentinel-2 revisit cycle)
+    enabled: false

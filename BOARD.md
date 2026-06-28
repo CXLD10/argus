@@ -9,8 +9,9 @@ Last reconciled: 2026-06-27 · by: governance session (architecture / spec build
 Scope: **v2.1 Environmental Intelligence Platform** — MVP = CP-4 (Phase 11 complete, Josh sign-off).
 See [`docs/adr/ADR-0005-mvp-redefinition.md`](docs/adr/ADR-0005-mvp-redefinition.md).
 
-Open questions blocking code: OQ-B (choke-point definition), OQ-C (calibration source),
-OQ-D (LLM tier/budget), OQ-E (NL-query read-only). See [`docs/product/OPEN_QUESTIONS.md`](docs/product/OPEN_QUESTIONS.md).
+Open questions blocking code: OQ-C (calibration source), OQ-D (LLM tier/budget), OQ-E (NL-query read-only).
+OQ-B resolved 2026-06-28 (choke-point definition confirmed; F-040 unblocked).
+See [`docs/product/OPEN_QUESTIONS.md`](docs/product/OPEN_QUESTIONS.md).
 
 ---
 
@@ -121,7 +122,7 @@ Note: requires ADR-0007 (scheduler) before F-037 starts.
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-037 | Per-domain tasking + scheduler (quota-aware) | TODO | — | ADR-0007 required first |
+| F-037 | Per-domain tasking + scheduler (quota-aware) | DONE | — | commit TBD |
 | F-038 | Incremental ingestion + idempotency + run history | TODO | — | dep F-037 |
 | F-039 | Observability (metrics + run dashboard) | TODO | — | dep F-038 |
 
@@ -131,7 +132,7 @@ Detailed specs: [`docs/features/phase-9.md`](docs/features/phase-9.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-040 | D4 choke points (DEM flow-accumulation) | BLOCKED | — | BLOCKED: OQ-B unresolved |
+| F-040 | D4 choke points (DEM flow-accumulation) | TODO | — | OQ-B resolved 2026-06-28; unblocked |
 | F-041 | D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation) | TODO | — | dep F-040 |
 | F-042 | FloodRisk predictor + hydro impact | TODO | — | dep F-041 |
 | F-043 | AcidDepositionRisk index (modeled; never a measurement) | TODO | — | dep F-041 |
@@ -178,6 +179,28 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-28 — implementation — F-037 (Session 9)
+
+- Did:
+  F-037: `argus/tasking/` module — `base.py` (ScheduledJob, TaskResult dataclasses; Scheduler protocol);
+  `apscheduler_backend.py` (APSchedulerBackend: BackgroundScheduler wrapper; RLock for re-entrant
+  schedule/unschedule; trigger() fires callback in daemon thread without disturbing schedule);
+  `quota_guard.py` (QuotaDecision; check_cdse_daily_quota / check_open_meteo_daily_quota /
+  check_domain_quota — dependency-injected store, stateless); `runner.py` (stateless
+  run_domain_task(): quota check → load AOI → resolve MonitorTarget → lazy-import domain →
+  search/acquire/analyze → persist AnalysisRun + Observations; dry_run flag for testing;
+  handles partial acquire failure gracefully).
+  `config/schedule.yaml` — schedule configuration template.
+  `tests/test_scheduler.py` — 34 tests covering all modules.
+  Bugfix: APScheduler schedule() + unschedule() deadlock fixed by switching to RLock and
+  extracting `_unschedule_locked()` helper.
+- State: All F-037 ACs met. 825/825 offline tests pass. ruff clean. mypy clean.
+  Scheduler protocol is backend-agnostic (Cloud Run can invoke same run_domain_task via HTTP).
+- Git: main · TBD
+- Quota: Zero.
+- Next: F-038 — Incremental ingestion + idempotency + run history.
+- Blockers: None.
 
 ### 2026-06-28 — implementation — F-034–F-036 (Session 8) — PHASE 7 COMPLETE
 
