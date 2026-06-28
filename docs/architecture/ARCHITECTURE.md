@@ -1,11 +1,12 @@
 # Argus — System Architecture
 
-- **Status:** v2.1 (full Environmental Intelligence Platform)
-- **Last updated:** 2026-06-27
+- **Status:** v2.2 (Phases 0–10 implemented; Phase 11 pending)
+- **Last updated:** 2026-06-29
 - **Supersedes:** root `ARCHITECTURE.md` (v2.0)
 - **Related:** [PRD.md](../product/PRD.md) · [DATA_MODELS.md](DATA_MODELS.md) · [STACK.md](STACK.md) · [ADR index](../adr/)
-- **Change log v2.1:** MVP redefined to full platform per ADR-0005; OQ-A resolved (no reduced vertical);
-  Phase 10 production UI added; Phase 11 system validation added; OQ-A/OQ-F closed; root file is now a stub.
+- **Change log v2.2:** Phase 10 dashboard implemented (React 19, Vite 8, Tailwind v4, 12 pages, design system v2);
+  OQ-B resolved 2026-06-28; all 4 domains + 5 predictors + AI layer implemented.
+- **Change log v2.1:** MVP redefined to full platform per ADR-0005; OQ-A resolved; Phase 10/11 added.
 
 ---
 
@@ -109,11 +110,46 @@ An `Assistant` service over the store + Tier A outputs: NL situation reports, NL
 Depends on the store/predictors, never the reverse. Falls back to templated reports when
 offline (`ARGUS_AI_OFFLINE=true`). See [AI Assistant spec](../ai/ASSISTANT.md).
 
-### Phase 10 Production UI — `frontend/`
+### Phase 10 Production UI — `frontend/` — IMPLEMENTED
 
-React + Vite + Tailwind CSS dashboard. Phases 0–9 ship a static Leaflet viewer per domain;
-Phase 10 replaces this with a unified multi-panel production dashboard. See
-[phase-10.md](../features/phase-10.md). All data via the FastAPI HTTP API — no direct DB access from frontend.
+React 19 + Vite 8 + Tailwind CSS v4 unified dashboard. All data flows through the FastAPI HTTP
+API — no direct store access from the frontend. Built to `frontend/dist/` and served by FastAPI's
+`StaticFiles` mount.
+
+**Technology:** React 19, Vite 8, TypeScript (strict), Tailwind CSS v4 (`@theme` tokens,
+`@tailwindcss/vite` plugin), shadcn/ui (New York, Neutral), TanStack Query v5 (server state),
+Zustand v5 (client state), React Leaflet (map), Recharts (charts), Lucide Icons, pnpm.
+
+**12 pages (React Router routes):**
+
+| Route | Page | Primary data |
+|---|---|---|
+| `/` | Overview | `/status`, `/aois/{id}/observations` |
+| `/map` | MapPage | `/aois/{id}/observations`, `/aois/{id}/choke-points` |
+| `/oil` | OilMonitoringPage | `/aois/{id}/observations?obs_type=oil_slick`, `/predictions` |
+| `/water-quality` | WaterQualityPage | `/waterbody/{id}/observations`, `/waterbody/{id}/report` |
+| `/hydro` | HydroPage | `/aois/{id}/flood-risk`, `/aois/{id}/acid-risk` |
+| `/choke-points` | ChokePointsPage | `/aois/{id}/choke-points` |
+| `/alerts` | AlertsPage | `/aois/{id}/observations` (all domains) |
+| `/predictions` | PredictionsPage | `/aois/{id}/predictions` (ForecastFrames) |
+| `/ai` | AIAssistantPage | `POST /query`, `/waterbody/{id}/report` |
+| `/admin` | AdminPage | `/status`, `/aois` |
+| `/settings` | SettingsPage | static config display |
+| `/exports` | ExportsPage | `/aois/{id}/observations`, `/aois/{id}/predictions` etc. |
+
+**Design system v2:** Inter + JetBrains Mono via Google Fonts; CSS shadow token system
+(`--shadow-xs` through `--shadow-xl`); type scale utility classes; page-enter route animations;
+left-border severity pattern; Perplexity-style citation badges; card variants (elevated, interactive,
+inset, ghost); Zustand stores for AOI selection, map layer state, sidebar state.
+
+**Demo data:** `frontend/src/lib/fixtures.ts` — Gulf of Paria, Trinidad scenario with 6
+observations (2 oil slicks, 2 chl-a, 1 turbidity, 1 precip), flood risk high (0.71), acid
+risk 6.8, 3 choke points, complete AI situation report.
+
+**State management:**
+- `aoiStore` — `selectedAOI`, `selectedObservation`
+- `mapStore` — `activeLayers: Set<string>` (toggleable map layer visibility)
+- `uiStore` — `sidebarOpen: boolean`
 
 ### Cross-cutting — `argus.core`
 

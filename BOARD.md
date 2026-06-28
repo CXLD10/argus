@@ -180,6 +180,42 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Blockers/decisions: <anything needing a human or ADR>
 ```
 
+### 2026-06-29 — implementation — F-045 (Session 13) — DESIGN POLISH PASS COMPLETE
+
+- Did:
+  Design system v2 polish pass across all frontend files. No new feature IDs — all within F-045 scope.
+  - `frontend/index.html` — Google Fonts (Inter 400/500/600/700, JetBrains Mono 400/500) via link tags.
+  - `src/index.css` — full rewrite: shadow token system (--shadow-xs–xl), type scale classes
+    (.text-display/.text-heading/.text-title/.text-body/.text-caption/.text-micro/.text-label),
+    animation keyframes (fade-in-up, thinking, scale-in, pulse-dot), .page-enter route transitions,
+    .risk-border-* left-border severity pattern (Stripe-style), .citation-badge (Perplexity-style),
+    .glass/.depth-1–4/.card-interactive, better Leaflet theming.
+  - `src/components/ui/card.tsx` — variant prop (default/elevated/interactive/inset/ghost), CardSeparator.
+  - `src/components/ui/metric-card.tsx` — 2px top accent bar, tabular-nums value, trend icons,
+    content-matched MetricSkeleton.
+  - `src/components/ui/skeleton.tsx` — SkeletonMetricRow, SkeletonListItem, SkeletonTableRow, SkeletonChart.
+  - `src/components/ui/empty-state.tsx` — compact prop, max-width constraints.
+  - `src/components/ui/button.tsx` — xs size, link variant, ring-offset fix.
+  - `src/components/layout/Sidebar.tsx` — 220px, nav-item-active-bar, Waves brand icon, aria-labels.
+  - `src/components/layout/Header.tsx` — ⌘K hint, aria-labels, refresh handler, notif-badge.
+  - `src/components/layout/AppShell.tsx` — skip-nav link, role/id on main, key prop for animations.
+  - `src/components/ai/AIReportPanel.tsx` — Sparkles icon, numbered citation list.
+  - `src/components/ai/NLQueryBox.tsx` — thinking dots animation, better bubbles, aria-live.
+  - `src/components/map/LayerManager.tsx` — Escape/outside-click dismiss, ARIA, Eye/EyeOff, active count.
+  - `src/components/domain/DomainStatusGrid.tsx` — domain color accents, conditional severity borders.
+  - `src/pages/Overview.tsx` — KPIs above map (not buried in panel), left-border live events, map HUD.
+  - `src/pages/AlertsPage.tsx` — left-border severity pattern, LucideIcon type fix.
+  - All 12 pages — page-enter animation applied to outermost container for route transitions.
+  - `src/lib/fixtures.ts` — realistic Gulf of Paria demo data (6 obs, flood/acid risk, 3 choke points,
+    AI situation report). Not yet wired to hooks — demo-mode fallback pending.
+- State: pnpm build clean, 0 TS errors, 891KB bundle. All 12 pages animate on route change.
+  Demo data exists in fixtures.ts but is not yet used as a fallback when backend is empty.
+- Git: main · 295bf27
+- Quota: Zero. No live fetches.
+- Next: Wire fixtures.ts as demo fallback in API hooks (useDemoData pattern), then begin F-052
+  (end-to-end integration tests, Phase 11).
+- Blockers: None.
+
 ### 2026-06-29 — implementation — F-045–F-051 (Session 12) — PHASE 10 COMPLETE
 
 - Did:

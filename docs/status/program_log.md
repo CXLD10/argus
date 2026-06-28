@@ -4,6 +4,50 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-29 — Session 13 — F-045 (Design Polish Pass): Design System v2 — COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Tasks:** F-045 scope — design polish pass across all Phase 10 frontend files
+
+### What happened
+
+**Full UX/visual polish pass committed (commit 295bf27)**
+
+Completed a comprehensive design audit across 20 UX categories (Navigation, Information hierarchy,
+Dashboard density, Color usage, Typography, Map interactions, Loading states, Empty states,
+Skeletons, AI experience, Alert experience, Accessibility, Keyboard navigation, Animation,
+Consistency, Professional appearance). Redesigned all categories below 9/10.
+
+Key design decisions:
+- **Typography**: Google Fonts (Inter + JetBrains Mono) wired via HTML link tags; type scale utility classes
+  (.text-display → .text-micro) + .text-label for data labels.
+- **Shadow system**: 5-tier CSS custom property system (--shadow-xs through --shadow-xl); card variants
+  (elevated adds box-shadow, interactive adds hover lift).
+- **Animations**: fade-in-up (.page-enter) applied to all 12 page outermost containers, triggered by
+  key={location.pathname} in AppShell; thinking-dot CSS stagger; scale-in for LayerManager panel.
+- **Information hierarchy (Overview)**: KPIs moved ABOVE the map (were buried in right panel), creating
+  an F-pattern scan flow: metrics → map + context → details.
+- **Alert severity**: Left-border pattern (.risk-border-extreme/high/medium/low) applied in AlertsPage
+  and Overview live events — Stripe Dashboard pattern, no semantic color overload.
+- **AI citations**: AIReportPanel redesigned with numbered citation list (.citation-badge) — Perplexity-style
+  numbered refs (¹ ² ³) replace meaningless 8-char UUID snippets.
+- **Accessibility**: Skip navigation link, role="main"/id="main-content" on AppShell, aria-label on all
+  icon-only buttons (Header, Sidebar), Escape dismiss + aria-expanded on LayerManager.
+- **Demo fixtures**: `src/lib/fixtures.ts` — realistic Gulf of Paria data (6 observations including 2 oil
+  slicks, flood risk=high/0.71, acid risk=6.8, 3 choke points, complete AI situation report).
+  NOT yet wired as fallback — pending useDemoData hook pattern.
+
+Build verified: `pnpm build` → 0 TS errors, 891KB bundle, 363ms build time.
+
+### Decisions made
+- None requiring ADR. All changes are cosmetic/UX, no architectural impact.
+
+### What's next
+- Wire `fixtures.ts` as demo-mode fallback in API hooks
+- Phase 11: F-052 (end-to-end integration tests)
+
+---
+
 ## 2026-06-29 — Session 12 — F-045–F-051: Phase 10 Frontend — COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6

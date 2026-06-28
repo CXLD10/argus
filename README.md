@@ -58,21 +58,20 @@ It never originates an environmental value.
 
 | Predictor | Method | Output |
 |---|---|---|
-| **OilTrajectory** | OpenOil particle simulation | Hourly footprint frames + particle spread uncertainty |
-| **WaterQualityForecast** | Gradient-boosted regression | 14-day bloom-risk forecast + confidence interval |
+| **OilTrajectory** | OpenOil particle simulation (subprocess-isolated) | Hourly footprint frames + particle spread uncertainty |
+| **WaterQualityForecast** | Gradient-boosted regression + Open-Meteo drivers | 14-day bloom-risk forecast + confidence interval |
 | **AnomalyDetector** | STL decomposition / z-score | Statistically significant departures from per-lake seasonal baseline |
-| **FloodRisk** | Discharge threshold + precipitation | Risk level (low/medium/high/extreme) at choke points |
+| **FloodRisk** | 3-component score (precip + discharge + choke constriction) | Risk level (low/medium/high/extreme) at choke points |
 | **AcidDepositionRisk** | SO₂ × NO₂ × precipitation index | 0–10 risk index (labeled: not a pH measurement) |
 
-Every prediction carries uncertainty. No predictor is shown in the UI until it has passed a
-history-based skill gate against real observations.
+Every prediction carries uncertainty quantification. No predictor is shown in the UI until it has
+passed a history-based skill gate against real observations.
 
 ### AI Assistant (Tier B)
 
 - **NL situation reports** — grounded plain-language summary for any water body or district
-- **NL query** — ask questions in plain English; answers cite only records in the store
+- **NL query** — ask questions in plain English; answers cite only records in the store (read-only)
 - **Anomaly explanation** — candidate hypothesis + recommended actions (advisory; human-in-the-loop)
-- **Alert summarization** — ranked digest of the day's alerts for operator review
 
 ---
 
@@ -84,20 +83,20 @@ history-based skill gate against real observations.
 │  OBSERVATION DOMAINS  (Domain protocol plug-ins)                                                 │
 │  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────────┐  ┌─────────────────────┐     │
 │  │ D1 Marine    │  │ D2 Inland water  │  │ D3 Weather & hydro   │  │ D4 Choke points     │     │
-│  │ oil (S1 SAR) │  │ quality (S2/S3)  │  │ (Open-Meteo, S5P)    │  │ (DEM/HydroSHEDS)    │     │
+│  │ oil (S1 SAR) │  │ quality (S2/S3)  │  │ (Open-Meteo, S5P)    │  │ (Copernicus DEM)    │     │
 │  └──────┬───────┘  └────────┬─────────┘  └──────────┬───────────┘  └──────────┬──────────┘     │
 │         └──────────────────┴────────────┬───────────┴──────────────────────────┘                │
 │                                         ▼                                                        │
 │  ┌──────────────────────────────────────────────────────────────────────────────────────────┐   │
-│  │       SPINE: tasking · ingestion · STORE · impact assessment · API · alerting            │   │
+│  │       SPINE: tasking · ingestion · STORE (SQLite) · impact · API (FastAPI) · alerting   │   │
 │  └──────────────────────────────────────┬───────────────────────────────────────────────────┘   │
 │                        ┌────────────────┼──────────────────────┐                                │
 │                        ▼                ▼                       ▼                               │
-│  TIER A — Prediction engine      TIER B — AI assistant    API + Production UI                   │
-│  OilTrajectory                   NL reports               FastAPI (HTTP)                        │
-│  WaterQualityForecast            NL query                 React + Vite dashboard                │
-│  AnomalyDetector                 Anomaly explain          Leaflet map viewer                    │
-│  FloodRisk                       Alert summaries          Webhook / email alerts                │
+│  TIER A — Prediction engine      TIER B — AI assistant    Production UI                         │
+│  OilTrajectory                   NL reports               React + Vite (12 pages)               │
+│  WaterQualityForecast            NL query (read-only)     Leaflet map viewer                    │
+│  AnomalyDetector                 Anomaly explanation      Recharts dashboards                   │
+│  FloodRisk                       (all grounded + cited)   TanStack Query + Zustand              │
 │  AcidDepositionRisk                                                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -134,6 +133,7 @@ argus/
 ├── CLAUDE.md                    Agent operating guide (read before any code)
 ├── BOARD.md                     Live task board — single source of truth for progress
 ├── ROADMAP.md                   Feature roadmap F-000 → F-056
+├── FRONTEND_BLUEPRINT.md        Authoritative frontend implementation record
 │
 ├── config/
 │   ├── oil_types.yaml           Oil type registry (required; no default — ADR-0006)
@@ -145,63 +145,64 @@ argus/
 │   └── static/                  Small static fixtures (coastline, exposure layers)
 │
 ├── docs/
-│   ├── product/
-│   │   ├── PRD.md               Product requirements (v2.1)
-│   │   └── OPEN_QUESTIONS.md    Outstanding decisions blocking implementation
-│   ├── architecture/
-│   │   ├── ARCHITECTURE.md      System architecture (v2.1)
-│   │   ├── DATA_MODELS.md       Canonical entity schemas (v2.1)
-│   │   └── STACK.md             Technology stack with license + cost validation
-│   ├── adr/                     Architecture Decision Records (ADR-0001 → ADR-0007)
+│   ├── product/PRD.md           Product requirements (v2.1)
+│   ├── architecture/            ARCHITECTURE.md, DATA_MODELS.md, STACK.md
+│   ├── adr/                     Architecture Decision Records (ADR-0001 → ADR-0008)
 │   ├── domains/                 D1–D4 domain specifications
 │   ├── prediction/              Predictor specifications (5 predictors)
 │   ├── ai/ASSISTANT.md          AI assistant specification
+│   ├── api/API_SPEC.md          Complete API reference (all 21 endpoints)
 │   ├── features/                Phase specs: phase-0.md through phase-11.md
-│   ├── standards/
-│   │   ├── TESTING.md           Testing requirements and patterns
-│   │   ├── CODING.md            Coding conventions
-│   │   └── QUOTAS.md            Free-tier quota rules
-│   ├── governance/
-│   │   ├── VALIDATORS.md        22 pre-session architecture validators
-│   │   └── HARNESS.md           Validation harness specification
-│   ├── status/
-│   │   ├── DASHBOARD.md         Project health dashboard
-│   │   ├── program_log.md       Session log
-│   │   ├── decision_log.md      Decision history
-│   │   └── change_log.md        Structural changes
-│   └── spec_graph.{md,yaml}     Human + machine-readable specification graph
+│   ├── standards/               TESTING.md, CODING.md, QUOTAS.md
+│   ├── governance/              VALIDATORS.md, HARNESS.md
+│   ├── status/                  DASHBOARD.md, program_log.md, decision_log.md
+│   ├── user_guide/USER_GUIDE.md End-user guide for all 12 pages
+│   ├── PROJECT_WALKTHROUGH.md   Technical + product tour for developers
+│   ├── DEMO_MODE.md             Demo data, fixtures, presentation workflow
+│   └── DEMO_SCRIPT.md           Polished 5–10 min live demo script
 │
-├── scripts/
-│   └── harness/                 Validation scripts (implemented in Phase 3.5)
+├── frontend/                    React + Vite dashboard (Phase 10)
+│   ├── src/
+│   │   ├── pages/               12 page components
+│   │   ├── components/          ui/, layout/, map/, charts/, ai/, domain/
+│   │   ├── api/                 typed fetch functions + Pydantic-mirrored types
+│   │   ├── store/               Zustand stores (aoiStore, mapStore, uiStore)
+│   │   └── lib/fixtures.ts      Gulf of Paria demo data
+│   └── ...
 │
-└── argus/                       Python package (created in Phase 0 / F-000)
-    tests/                       Test suite (created in Phase 0 / F-000)
+├── argus/                       Python package
+│   ├── api/                     FastAPI app + routers + schemas
+│   ├── domains/                 D1–D4 domain implementations
+│   ├── predict/                 5 predictor implementations
+│   ├── ai/                      Grounded AI assistant layer
+│   ├── core/                    models, store, config, errors, logging
+│   ├── tasking/                 scheduler + quota guard
+│   └── cli.py                   argus CLI (version / run / serve)
+│
+└── tests/                       56 test files · 1072 tests (offline default)
 ```
 
 ---
 
 ## Current Status
 
-**Phase: Pre-implementation.** All specifications, architecture decisions, governance
-documents, and domain/predictor/AI specs are complete. No implementation code exists yet.
-
-The first build task is **F-000 (Repo & Tooling Scaffold)**.
+**Phase 10 complete. All implementation done through F-051. Phase 11 (system validation) is next.**
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Foundation & spike (D1 oil) | TODO |
-| 1 | Detection vertical (oil) | TODO |
-| 2 | Simulation vertical (oil) | TODO |
-| 3 | Impact, delivery & viewer — CP-1 | TODO |
-| 3.5 | Foundation hardening | TODO |
-| 4 | Domain D2: inland water quality | TODO |
-| 5 | Prediction engine: water quality | TODO |
-| 6 | AI layer | TODO |
-| 7 | Platform integration — CP-2 | TODO |
-| 8 | Automation & scheduling | TODO |
-| 9 | Domains D3 & D4 — CP-3 | TODO |
-| 10 | Production dashboard | TODO |
-| 11 | System validation & MVP sign-off — **CP-4 = MVP** | TODO |
+| 0 | Foundation & spike (D1 oil) | **DONE** |
+| 1 | Detection vertical (oil) | **DONE** |
+| 2 | Simulation vertical (oil) | **DONE** |
+| 3 | Impact, delivery & viewer — CP-1 | **DONE** |
+| 3.5 | Foundation hardening | **DONE** |
+| 4 | Domain D2: inland water quality | **DONE** |
+| 5 | Prediction engine: water quality | **DONE** |
+| 6 | AI layer | **DONE** |
+| 7 | Platform integration — CP-2 | **DONE** |
+| 8 | Automation & scheduling | **DONE** |
+| 9 | Domains D3 & D4 — CP-3 | **DONE** |
+| 10 | Production dashboard | **DONE** |
+| 11 | System validation & MVP sign-off — **CP-4 = MVP** | **TODO** (next) |
 
 Live progress: [`BOARD.md`](BOARD.md) · Full roadmap: [`ROADMAP.md`](ROADMAP.md)
 
@@ -209,38 +210,57 @@ Live progress: [`BOARD.md`](BOARD.md) · Full roadmap: [`ROADMAP.md`](ROADMAP.md
 
 ## Setup
 
-> **Prerequisites:** Python 3.11+, `uv` (recommended) or pip, WSL2 (Windows) or Linux/macOS.
+> **Prerequisites:** Python 3.11+, `uv` (recommended) or pip, Node 20+, pnpm, WSL2 (Windows) or Linux/macOS.
 > No cloud account required to start. CDSE, CMEMS, and Anthropic credentials are needed only
 > for live data runs.
 
+### Backend
+
 ```bash
 # 1. Clone
-git clone <repo-url>
+git clone https://github.com/CXLD10/argus.git
 cd argus
 
 # 2. Create virtual environment and install
 uv venv
 source .venv/bin/activate
-uv pip install -e ".[dev]"     # once pyproject.toml exists (Phase 0 / F-000)
+uv pip install -e ".[dev]"
 
 # 3. Copy and fill in your settings
 cp config/settings.yaml config/settings.local.yaml
-# Edit settings.local.yaml with CDSE credentials, etc.
+# Edit settings.local.yaml with CDSE credentials etc.
 # Never commit settings.local.yaml
 
-# 4. Run the test suite (offline; no credentials needed)
+# 4. Run the test suite (fully offline; no credentials needed)
 pytest tests/
+
+# 5. Start the API server
+argus serve                    # http://localhost:8000
+argus serve --port 8001        # custom port
+argus serve --db-path prod.db  # custom database
 ```
 
-> The Python package and `pyproject.toml` are created in **F-000**. Until then, the
-> repository contains specification and governance documents only.
+### Frontend
+
+```bash
+cd frontend
+pnpm install
+pnpm dev      # http://localhost:5173 — connects to http://localhost:8000 by default
+pnpm build    # production bundle → frontend/dist/
+```
+
+### CLI
+
+```bash
+argus version                                        # print version
+argus run --aoi tobago --since 2024-02-01            # offline synthetic run
+argus run --aoi tobago --since 2024-02-01 --live     # live CDSE data (requires credentials)
+argus serve                                          # start FastAPI server
+```
 
 ---
 
 ## Development Workflow
-
-This project is **spec-driven**: every feature is fully specified before implementation.
-Read the specifications before writing any code.
 
 **Session start (every time):**
 1. Read [`CLAUDE.md`](CLAUDE.md) (the agent operating guide)
@@ -251,22 +271,23 @@ Read the specifications before writing any code.
 
 **Session end (every time):**
 - Update `BOARD.md` with task status
-- Append a HANDOFF note to `BOARD.md` (see format in file)
+- Append a HANDOFF note to `BOARD.md`
 - Append to `docs/status/program_log.md`
 
 **Architecture rules (binding):**
-- All DB access through `argus.core.store` — never import `sqlite3` elsewhere
-- OpenDrift imports only in `argus/domains/marine_oil/sim_worker.py` (GPL isolation)
-- Oil type is always specified explicitly — never hardcoded, no default (ADR-0006)
-- Every `Observation` and `Prediction` carries `evidence_class`
-- Unit tests are offline by default; use `--live` flag for network tests
+- All DB access through `argus.core.store` — never import `sqlite3` elsewhere (INV-6)
+- OpenDrift imports only in `argus/domains/marine_oil/sim_worker.py` (GPL isolation, INV-1)
+- Oil type is always specified explicitly — never hardcoded, no default (ADR-0006, INV-5)
+- Every `Observation` and `Prediction` carries `evidence_class` (INV-3)
+- Every `Prediction` carries `uncertainty` — no exception (INV-9)
+- Unit tests are offline by default; use `--live` flag for network tests (INV-7)
 
 **Code quality:**
 ```bash
 ruff check .          # lint
 ruff format .         # format
 mypy argus/           # type check
-pytest tests/         # test (offline)
+pytest tests/         # test (offline; 1072 tests)
 pytest tests/ --live  # test with live data (requires credentials)
 ```
 
@@ -277,26 +298,31 @@ pytest tests/ --live  # test with live data (requires credentials)
 | Document | Purpose |
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | Agent/developer operating guide — start here |
+| [`docs/DEVELOPER_ONBOARDING.md`](docs/DEVELOPER_ONBOARDING.md) | New developer setup + architecture rules |
+| [`docs/user_guide/USER_GUIDE.md`](docs/user_guide/USER_GUIDE.md) | End-user guide for all 12 pages |
+| [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md) | Technical tour for evaluators + contributors |
+| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | Polished 5–10 min live demo script |
+| [`docs/DEMO_MODE.md`](docs/DEMO_MODE.md) | Demo data, fixtures, presentation workflow |
+| [`docs/api/API_SPEC.md`](docs/api/API_SPEC.md) | Complete API reference (21 endpoints) |
+| [`FRONTEND_BLUEPRINT.md`](FRONTEND_BLUEPRINT.md) | Frontend implementation record |
 | [`docs/product/PRD.md`](docs/product/PRD.md) | Product requirements (v2.1) |
 | [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) | System architecture |
 | [`docs/architecture/DATA_MODELS.md`](docs/architecture/DATA_MODELS.md) | Entity schemas |
 | [`docs/architecture/STACK.md`](docs/architecture/STACK.md) | Technology stack |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (ADR-0001–ADR-0008) |
 | [`docs/domains/`](docs/domains/) | D1–D4 domain specifications |
 | [`docs/prediction/`](docs/prediction/) | Predictor specifications |
 | [`docs/ai/ASSISTANT.md`](docs/ai/ASSISTANT.md) | AI assistant specification |
 | [`docs/standards/TESTING.md`](docs/standards/TESTING.md) | Testing requirements |
 | [`docs/standards/CODING.md`](docs/standards/CODING.md) | Coding conventions |
 | [`docs/standards/QUOTAS.md`](docs/standards/QUOTAS.md) | Free-tier quota rules |
-| [`docs/governance/VALIDATORS.md`](docs/governance/VALIDATORS.md) | 22 architecture validators |
 | [`docs/status/DASHBOARD.md`](docs/status/DASHBOARD.md) | Project health dashboard |
-| [`docs/product/OPEN_QUESTIONS.md`](docs/product/OPEN_QUESTIONS.md) | Outstanding decisions |
 
 ---
 
 ## License
 
-MIT License — see `LICENSE` file (to be created in F-000).
+MIT License — see `LICENSE`.
 
 Data used by Argus carries its own terms:
 - Copernicus Sentinel data: [Copernicus Sentinel Data Terms and Conditions](https://sentinel.esa.int/web/sentinel/terms-conditions)
@@ -307,7 +333,7 @@ Data used by Argus carries its own terms:
 
 ## Contributing
 
-This project is spec-driven. Before submitting a pull request:
+Before submitting a pull request:
 
 1. Check that the feature exists in [`BOARD.md`](BOARD.md) with status `TODO`.
 2. Read the corresponding spec in [`docs/features/`](docs/features/).

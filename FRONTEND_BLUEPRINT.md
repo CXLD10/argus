@@ -1,14 +1,18 @@
 # Argus Environmental Intelligence Platform — Frontend Blueprint
 
-- **Version:** 1.0
+- **Version:** 2.0
 - **Created:** 2026-06-28
-- **Status:** AUTHORITATIVE — single source of truth for Phase 10 frontend implementation
-- **Phase coverage:** Phase 10 (F-045–F-051) implementation + Phase 11 frontend requirements
-- **Backend baseline:** Phases 0–9 complete (F-000–F-044 committed)
+- **Updated:** 2026-06-29 (v2.0 — reflects Phase 10 implemented state)
+- **Status:** AUTHORITATIVE IMPLEMENTATION RECORD — Phase 10 (F-045–F-051) is COMPLETE
+- **Phase coverage:** Phase 10 complete · Phase 11 frontend requirements pending
+- **Backend baseline:** Phases 0–10 complete (F-000–F-051 committed)
 
-This document replaces all prior informal frontend notes. All implementation decisions in
-Phase 10 must be traceable to a section in this document. Updates require incrementing the
-version and appending a change note to §19.
+This document is the single source of truth for the Argus frontend. v1.0 was the planning
+document; v2.0 reflects the implemented system. Any change to frontend architecture requires
+updating this document and incrementing the version.
+
+> **Implementation notes in this document** are marked with **[IMPL]** and describe actual
+> decisions taken during Phase 10 that differ from or extend the original plan.
 
 ---
 
@@ -64,22 +68,13 @@ All backend phases are complete as of 2026-06-27:
 | Phase 7: Integration | F-034–F-036 | **DONE** |
 | Phase 8: Automation | F-037–F-039 | **DONE** |
 | Phase 9: D3+D4 + viewer | F-040–F-044 | **DONE** |
-| **Phase 10: Production UI** | **F-045–F-051** | **TODO — this blueprint** |
-| Phase 11: Validation/MVP | F-052–F-056 | FUTURE |
+| **Phase 10: Production UI** | **F-045–F-051** | **DONE** (commits 6d258b7, 295bf27) |
+| Phase 11: Validation/MVP | F-052–F-056 | TODO (next) |
 
-The current viewer (`argus/api/static/index.html` + `app.js`) is a functional
-plain-HTML+Leaflet prototype that covers all 8 load functions but lacks:
-- Multi-AOI support with switching
-- Domain-specific drill-down panels
-- Animated trajectory playback
-- Time-series charts for WQ trends
-- Full AI assistant UI with citation rendering
-- Admin/config management
-- Export workflows
-- Mobile responsiveness
-
-Phase 10 replaces the static viewer with a production React+Vite+Tailwind dashboard
-served from `frontend/dist/` via FastAPI's static file mount.
+**[IMPL]** Phase 10 is complete. The React+Vite+Tailwind dashboard is implemented at `frontend/`
+and built to `frontend/dist/`. It serves from FastAPI's static file mount in production.
+The dashboard includes all 12 pages, design system v2 (typography, shadows, animations),
+and realistic demo fixture data for Gulf of Paria, Trinidad.
 
 ### How to Use This Document
 
@@ -1809,100 +1804,96 @@ VITE_API_BASE_URL=https://api.argus.run   # prod (Cloud Run)
 
 ## 11. Design System
 
+> **[IMPL v2.0]** The implemented design system differs from the v1.0 plan. See notes below.
+
 ### 11.1 Color Palette
 
+**[IMPL]** Implemented colors (in `frontend/src/index.css` via Tailwind v4 `@theme` block):
+
 ```
-Background (dark map theme):
-  bg-base:     #0f172a   (slate-900)  — main background
-  bg-surface:  #1e293b   (slate-800)  — cards, panels
-  bg-elevated: #334155   (slate-700)  — hover states, modals
+Page background:   #080c14   — deeper than original plan (#0f172a)
+Sidebar:           #0d1424
+Surface-1:         #111827   — cards
+Surface-2:         #131c2e
+Surface-3:         #1a2540
+Border default:    #1e293b
 
-Text:
-  text-primary:   #f1f5f9  (slate-100)
-  text-secondary: #94a3b8  (slate-400)
-  text-muted:     #475569  (slate-600)
+Text primary:      #f1f5f9   (slate-100)
+Text secondary:    #94a3b8   (slate-400)
+Text muted:        #475569   (slate-600)
 
-Accent (brand):
-  accent:      #38bdf8  (sky-400)     — links, active state, trajectory layer
-  accent-dark: #0ea5e9  (sky-500)
+Brand/accent:      #2563eb   (blue-600)
 
-Status / Risk:
-  risk-extreme: #ef4444  (red-500)    — also confidence ≥ 80%
-  risk-high:    #f97316  (orange-500) — also confidence ≥ 50%
-  risk-medium:  #facc15  (yellow-400) — also confidence < 50%
-  risk-low:     #22c55e  (green-500)
-  risk-normal:  #22c55e  (green-500)
+Status / Risk (CSS utility classes .risk-border-* applied as 3px left border):
+  .risk-border-extreme  →  #ef4444 (red-500)
+  .risk-border-high     →  #f97316 (orange-500)
+  .risk-border-medium   →  #eab308 (yellow-500)
+  .risk-border-low      →  #22c55e (green-500)
 
-Evidence class badges:
-  measured:  no badge
-  modeled:   #f59e0b  (amber-500) background, text white
-  inferred:  #60a5fa  (blue-400)  background, text slate-900
-
-AI model badge:
-  live:     #818cf8  (indigo-400) — "claude-sonnet-4-6"
-  template: #facc15  (yellow-400) — "template" (offline mode)
-
-Attribution text:  #64748b  (slate-500) — small, always visible
-
-Open-Meteo CC:    #64748b italic (rendered in AttributionFooter)
+Evidence class badges (EvidenceClassBadge component):
+  measured:  slate badge
+  modeled:   amber badge
+  inferred:  blue badge
 ```
 
 ### 11.2 Typography
 
-```
-Font family:
-  Display:  Inter Variable (from Bunny Fonts — zero cost, GDPR-safe)
-  Mono:     JetBrains Mono (for IDs, JSON, citation keys)
+**[IMPL]** Fonts loaded via `<link>` tags in `frontend/index.html` (not Bunny Fonts as planned):
 
-Scale:
-  xs:    0.65rem / 1rem    — quota labels, map attribution
-  sm:    0.75rem / 1.1rem  — table cells, observation details
-  base:  0.875rem / 1.4rem — body text, panel content
-  lg:    1rem / 1.5rem     — section headers, card titles
-  xl:    1.125rem / 1.5rem — screen titles
-  2xl:   1.5rem / 2rem     — metric values (risk scores, quota numbers)
-
-Weight:
-  normal: 400 — body
-  medium: 500 — labels
-  semibold: 600 — card headers, table headers
-  bold: 700 — metric values, risk badges
+```html
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 ```
+
+Type scale utility classes (defined in `index.css`):
+- `.text-display`  — 2xl, bold, tight tracking
+- `.text-heading`  — xl, semibold
+- `.text-title`    — base, semibold
+- `.text-body`     — sm, normal
+- `.text-caption`  — xs, normal
+- `.text-micro`    — 10px, normal
+- `.text-label`    — 10px, medium, uppercase, tracking-wide
+
+Metric values: `text-[28px] font-bold tabular-nums` (MetricCard component)
 
 ### 11.3 Spacing
 
-Tailwind 4-pixel base. Key layout constants:
-- Header height: `h-14` (56px)
-- Sidebar width: `w-56` (224px) expanded; `w-14` (56px) collapsed
-- Card padding: `p-4` (16px)
-- Panel gap: `gap-4` (16px)
-- Map canvas: `calc(100vh - 56px)` height when full-screen
+Tailwind 4-pixel base. Implemented layout constants:
+- Header height: `h-[52px]` (AppShell)
+- Sidebar width: `w-[220px]` expanded; `w-[52px]` collapsed
+- KPI bar: `grid grid-cols-4 gap-3 px-4 pt-4 pb-3` (Overview page)
+- Map canvas: `flex-1 min-h-0` within flex parent
 
-### 11.4 Component Styling Conventions
+### 11.4 Shadow System
 
-- All cards: `rounded-lg bg-surface border border-slate-700 p-4`
-- Tables: `divide-y divide-slate-700`, `hover:bg-slate-700/50`
-- Badges: `inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium`
-- Buttons: `rounded-md px-3 py-2 text-sm font-medium transition-colors`
-  - Primary: `bg-sky-500 hover:bg-sky-400 text-white`
-  - Secondary: `bg-slate-700 hover:bg-slate-600 text-slate-100`
-  - Danger: `bg-red-600 hover:bg-red-500 text-white`
+**[IMPL]** Added in design system v2. CSS custom properties:
+
+```css
+--shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+--shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+--shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+```
+
+Card variants using shadows: `elevated` (uses `--shadow-md`), `interactive` (hover lift via `.card-interactive`).
 
 ### 11.5 Motion / Animation
 
-Framer Motion used only for:
-- Sidebar collapse/expand: `width` animation, 200ms ease-out
-- CitationViewer slide-in: `x` transform, 250ms ease-out
-- Alert drawer: `y` transform, 200ms ease-out
-- TrajectoryPlayer frame transitions: opacity, 100ms per frame
+**[IMPL]** Animation via CSS keyframes (not Framer Motion — that dependency was not added):
 
-Do not animate data updates — charts update without animation to avoid confusion with
-real-time data changes.
+```css
+@keyframes fade-in-up   — .page-enter on all 12 page root containers
+@keyframes scale-in     — .animate-scale-in on LayerManager panel open
+@keyframes thinking     — .thinking-dot with staggered delay (NLQueryBox)
+@keyframes pulse-dot    — domain status pulse indicators
+```
+
+Route transitions: `key={location.pathname}` on `<main>` in AppShell triggers `.page-enter` on
+each navigation.
 
 ### 11.6 Dark Mode
 
-Argus uses dark mode only (not togglable). The dark basemap and dark UI are a unified
-visual system. There is no light mode for Phase 10.
+Argus uses dark mode only (not togglable). There is no light mode.
 
 ---
 
@@ -2106,37 +2097,76 @@ AI endpoints (report, explanation, query) can take 2–8 seconds. Use:
 
 ---
 
-## 15. Phase 10 Implementation Plan
+## 15. Phase 10 Implementation — DONE
 
-### F-045: Frontend Scaffold
+> **[IMPL]** Phase 10 is complete as of 2026-06-29 (commits 6d258b7, 295bf27).
+> The file paths below reflect the actual implementation, not the original plan.
+> Original plan had `src/screens/` but implementation uses `src/pages/`.
 
-**Goal:** `frontend/` directory with working Vite build served by FastAPI.
+### F-045–F-051: Implemented File Map
 
-**Files created:**
-- `frontend/package.json`
-- `frontend/vite.config.ts`
-- `frontend/tsconfig.json`
-- `frontend/tailwind.config.ts`
-- `frontend/src/main.tsx`
-- `frontend/src/App.tsx` (router setup)
-- `frontend/index.html`
-- `argus/api/app.py` — add StaticFiles mount for `frontend/dist/`
-
-**Acceptance criteria:**
-- `npm run build` in `frontend/` produces `argus/api/static/dist/`
-- FastAPI serves the React app at `/`
-- React Router routes render without 404 on direct navigation
-- All 14 dependencies installed with correct versions
-- TypeScript strict mode enabled, no type errors
-
-**Dependencies to install:**
 ```
-react react-dom react-router-dom @tanstack/react-query zustand
-leaflet react-leaflet recharts framer-motion react-hook-form zod
-@types/react @types/react-dom @types/leaflet
-tailwindcss @tailwindcss/vite autoprefixer
-shadcn-ui vitest @testing-library/react
+frontend/
+├── index.html                          — Google Fonts link tags, title
+├── vite.config.ts                      — @tailwindcss/vite plugin, @ alias
+├── tsconfig.app.json                   — strict, ignoreDeprecations: "6.0"
+├── src/
+│   ├── vite-env.d.ts                   — /// <reference types="vite/client" />
+│   ├── index.css                       — @theme tokens, shadow vars, animation keyframes
+│   ├── main.tsx                        — BrowserRouter + QueryClientProvider
+│   ├── App.tsx                         — 12 routes + AppShell
+│   ├── lib/
+│   │   ├── utils.ts                    — cn() utility (clsx + tailwind-merge)
+│   │   └── fixtures.ts                 — Gulf of Paria demo data (DEMO_AOI, DEMO_OBSERVATIONS etc.)
+│   ├── api/
+│   │   ├── client.ts                   — typed fetch wrapper
+│   │   ├── endpoints.ts                — 19 typed fetch functions
+│   │   └── types.ts                    — TypeScript types mirroring Pydantic schemas
+│   ├── store/
+│   │   ├── aoiStore.ts                 — selectedAOI, selectedObservation
+│   │   ├── mapStore.ts                 — activeLayers (Set<string>)
+│   │   └── uiStore.ts                  — sidebarOpen
+│   ├── components/
+│   │   ├── ui/                         — badge, button, card (5 variants), empty-state,
+│   │   │                                 metric-card, skeleton (5 variants), spinner
+│   │   ├── layout/                     — AppShell, Header, Sidebar
+│   │   ├── map/                        — ArgusMap (react-leaflet), LayerManager
+│   │   ├── charts/                     — WQTrendChart, RiskScoreGauge, AcidRiskGauge, QuotaGauge
+│   │   ├── ai/                         — AIReportPanel, NLQueryBox
+│   │   └── domain/                     — DomainStatusGrid, EvidenceClassBadge, RiskLevelBadge
+│   └── pages/
+│       ├── Overview.tsx                — KPI bar + map + right panel
+│       ├── MapPage.tsx                 — Full-screen map + observation drawer
+│       ├── OilMonitoringPage.tsx       — Oil map + slick list + trajectory section
+│       ├── WaterQualityPage.tsx        — WQ selector + chart + AIReportPanel
+│       ├── HydroPage.tsx               — FloodRiskGauge + AcidRiskGauge
+│       ├── ChokePointsPage.tsx         — Map + sorted choke card list
+│       ├── AlertsPage.tsx              — Left-border severity list
+│       ├── PredictionsPage.tsx         — Trajectory frame player
+│       ├── AIAssistantPage.tsx         — NLQueryBox + AIReportPanel
+│       ├── AdminPage.tsx               — Status + quotas + domain runs + AOIs
+│       ├── SettingsPage.tsx            — Env config + data source quotas
+│       └── ExportsPage.tsx             — JSON export buttons per entity
 ```
+
+**Actual dependencies installed:**
+```json
+"react": "^19.0.0",
+"react-dom": "^19.0.0",
+"react-router-dom": "^7.0.0",
+"@tanstack/react-query": "^5.0.0",
+"zustand": "^5.0.0",
+"leaflet": "^1.9.0",
+"react-leaflet": "^5.0.0",
+"recharts": "^2.15.0",
+"lucide-react": "latest",
+"class-variance-authority": "^0.7.0",
+"clsx": "^2.0.0",
+"tailwind-merge": "^2.0.0",
+"tailwindcss-animate": "^1.0.7"
+```
+
+**Build:** `pnpm build` → 891KB bundle, 0 TypeScript errors, 363ms build time.
 
 ---
 
