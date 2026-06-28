@@ -111,13 +111,17 @@ scheduler:
 
 domains:
   hydro_chokepoints:
-    # Minimum upstream contributing cells for a choke-point candidate.
-    # Configurable per OQ-B resolution: no hardcoded thresholds (Josh, 2026-06-28).
-    flow_acc_threshold_cells: 100
-    # Number of top-scoring choke points to extract per AOI.
-    top_n_chokepoints: 10
-    # DEM grid cell size in metres (Copernicus GLO-30 = 30m).
+    # Thresholds are configurable (OQ-B resolution, 2026-06-28). No hardcoded values.
+    # Ground sampling distance of the source DEM in metres (Copernicus GLO-30 = 30 m).
     cell_size_m: 30.0
+    # Minimum upstream contributing area (km²) for a candidate to qualify.
+    min_upstream_area_km2: 1.0
+    # Minimum normalised constriction score [0–1] to include a candidate.
+    min_constriction_score: 0.05
+    # Maximum number of choke points returned per AOI (ranked by score).
+    max_candidates: 50
+    # DEM product identifier — used as ChokePoint.dem_source (evidence trail, INV-3).
+    dem_source: "cop_glo30"
   flood_risk:
     # Cumulative 72-hour rainfall threshold for high-risk classification (mm).
     threshold_mm: 100.0

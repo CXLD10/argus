@@ -19,6 +19,7 @@ VALID_OBS_TYPES: frozenset[str] = frozenset(
         "surface_temp",
         "inundation",
         "bloom_presence",  # D2: inferred from elevated chl-a proxy
+        "choke_point",    # D4: DEM-derived drainage constriction node
     }
 )
 
@@ -191,6 +192,23 @@ class ImpactAssessment(BaseModel):
     valid_at: datetime  # valid_at of the first intersecting ForecastFrame (= ETA)
     eta_hours: float  # hours from prediction t0 to first intersection
     metrics: dict[str, Any]  # coast_length_km | mpa_area_km2
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class ChokePoint(BaseModel):
+    """A DEM-derived drainage constriction node (D4 output).
+
+    INV-3: evidence_class is "inferred" — choke points are derived from DEM geometry,
+    not directly observed from orbit. They are never stored as "measured".
+    """
+
+    id: str
+    aoi_id: str
+    location: dict[str, Any]  # GeoJSON Point geometry
+    upstream_area_km2: float  # area draining through this node
+    constriction_score: float  # 0–1; higher = more topographic concentration
+    dem_source: str = "cop_glo30"  # Copernicus GLO-30 DEM
+    evidence_class: Literal["measured", "modeled", "inferred"] = "inferred"
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 

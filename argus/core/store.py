@@ -14,6 +14,7 @@ from pathlib import Path
 
 from argus.core.models import (
     AnalysisRun,
+    ChokePoint,
     ExposureLayer,
     ForecastFrame,
     ImpactAssessment,
@@ -149,6 +150,18 @@ class Store:
                     valid_at            TEXT NOT NULL,
                     eta_hours           REAL NOT NULL,
                     metrics             TEXT NOT NULL DEFAULT '{}',
+                    created_at          TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS choke_points (
+                    id                  TEXT PRIMARY KEY,
+                    aoi_id              TEXT NOT NULL,
+                    location            TEXT NOT NULL,
+                    upstream_area_km2   REAL NOT NULL,
+                    constriction_score  REAL NOT NULL,
+                    dem_source          TEXT NOT NULL DEFAULT 'cop_glo30',
+                    evidence_class      TEXT NOT NULL DEFAULT 'inferred',
                     created_at          TEXT NOT NULL
                 )
             """)
@@ -537,6 +550,39 @@ class Store:
             ).fetchall()
         return [_row_to_impact_assessment(r) for r in rows]
 
+    # ── ChokePoint CRUD (F-040) ───────────────────────────────────────────────
+
+    def save_choke_point(self, cp: ChokePoint) -> None:
+        """Persist a ChokePoint (INSERT OR REPLACE)."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO choke_points
+                    (id, aoi_id, location, upstream_area_km2, constriction_score,
+                     dem_source, evidence_class, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    cp.id,
+                    cp.aoi_id,
+                    json.dumps(cp.location),
+                    cp.upstream_area_km2,
+                    cp.constriction_score,
+                    cp.dem_source,
+                    cp.evidence_class,
+                    cp.created_at.isoformat(),
+                ),
+            )
+
+    def get_choke_points(self, aoi_id: str) -> list[ChokePoint]:
+        """Return all ChokePoints for a given AOI, sorted by constriction_score descending."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM choke_points WHERE aoi_id = ? ORDER BY constriction_score DESC",
+                (aoi_id,),
+            ).fetchall()
+        return [_row_to_choke_point(r) for r in rows]
+
     # ── RunHistory CRUD (F-038) ───────────────────────────────────────────────
 
     def save_run_history(self, run: RunHistory) -> None:
@@ -730,6 +776,19 @@ def _row_to_impact_assessment(row: sqlite3.Row) -> ImpactAssessment:
         valid_at=datetime.fromisoformat(row["valid_at"]),
         eta_hours=row["eta_hours"],
         metrics=json.loads(row["metrics"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _row_to_choke_point(row: sqlite3.Row) -> ChokePoint:
+    return ChokePoint(
+        id=row["id"],
+        aoi_id=row["aoi_id"],
+        location=json.loads(row["location"]),
+        upstream_area_km2=row["upstream_area_km2"],
+        constriction_score=row["constriction_score"],
+        dem_source=row["dem_source"],
+        evidence_class=row["evidence_class"],
         created_at=datetime.fromisoformat(row["created_at"]),
     )
 

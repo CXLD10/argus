@@ -124,7 +124,7 @@ Note: requires ADR-0007 (scheduler) before F-037 starts.
 |---|---|---|---|---|
 | F-037 | Per-domain tasking + scheduler (quota-aware) | DONE | — | commit 70fa768 |
 | F-038 | Incremental ingestion + idempotency + run history | DONE | — | commit dc39641 |
-| F-039 | Observability (metrics + run dashboard) | DONE | — | commit TBD |
+| F-039 | Observability (metrics + run dashboard) | DONE | — | commit a23ece5 |
 
 ## Phase 9 — Domains D3 (weather/hydro) & D4 (choke points) *(P1)* — CP-3
 
@@ -132,7 +132,7 @@ Detailed specs: [`docs/features/phase-9.md`](docs/features/phase-9.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-040 | D4 choke points (DEM flow-accumulation) | TODO | — | OQ-B resolved 2026-06-28; unblocked |
+| F-040 | D4 choke points (DEM flow-accumulation) | DONE | — | commit TBD · 49 tests · ruff/mypy clean |
 | F-041 | D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation) | TODO | — | dep F-040 |
 | F-042 | FloodRisk predictor + hydro impact | TODO | — | dep F-041 |
 | F-043 | AcidDepositionRisk index (modeled; never a measurement) | TODO | — | dep F-041 |
@@ -180,6 +180,33 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Blockers/decisions: <anything needing a human or ADR>
 ```
 
+### 2026-06-28 — implementation — F-040 (Session 10)
+
+- Did:
+  F-040: D4 Hydro Choke Points domain — full implementation.
+  `argus/domains/hydro_chokepoints/__init__.py` — package stub.
+  `argus/domains/hydro_chokepoints/dem_processor.py` — pure numpy D8 flow direction +
+  accumulation + `upstream_area_km2()` conversion helper.
+  `argus/domains/hydro_chokepoints/constriction.py` — `score_constriction()`, `extract_choke_points()`,
+  `candidates_to_choke_points()`; all thresholds configurable, no hardcoded values (OQ-B).
+  `argus/domains/hydro_chokepoints/analyzer.py` — `HydroChokepointsDomain` implementing Domain
+  protocol: search/acquire/analyze → Observations(obs_type="choke_point", evidence_class="inferred").
+  `argus/core/models.py` — `ChokePoint` model; "choke_point" added to VALID_OBS_TYPES.
+  `argus/core/store.py` — `choke_points` table DDL; `save_choke_point()`, `get_choke_points()`,
+  `_row_to_choke_point()`.
+  `argus/core/config.py` — `HydroChokepointsConfig`, `DomainsConfig`; `Settings.domains` field.
+  `argus/tasking/runner.py` — `"hydro_chokepoints"` registered in `_load_domain()`.
+  `config/settings.yaml` — `domains.hydro_chokepoints` section with canonical threshold keys.
+  `config/dem_sources.yaml` — DEM source registry (cop_glo30, srtm_30m).
+  `tests/test_choke_points.py` — 49 tests covering D8 algorithm, constriction, Domain protocol, Store CRUD.
+- State: All F-040 ACs met. 909/909 tests pass. ruff clean. mypy clean. INV-3 enforced
+  (evidence_class="inferred" on all ChokePoint/choke_point Observations). OQ-B satisfied:
+  all thresholds in settings.yaml, zero hardcoded values.
+- Git: main · commit pending
+- Quota: Zero. No live fetches.
+- Next: F-041 — D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation).
+- Blockers: None.
+
 ### 2026-06-28 — implementation — F-039 (Session 9 continued)
 
 - Did:
@@ -192,7 +219,7 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
   `tests/test_observability.py`: 13 tests.
 - State: All F-039 ACs met. 859/859 tests pass. ruff clean. mypy clean.
   Phase 8 DoD: F-037/F-038/F-039 all DONE.
-- Git: main · TBD
+- Git: main · a23ece5
 - Quota: Zero.
 - Next: F-040 — D4 Choke Points (Phase 9). OQ-B resolved; unblocked.
 - Blockers: None.

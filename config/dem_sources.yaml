@@ -1,0 +1,23 @@
+# Argus DEM Source Registry
+#
+# Each entry documents a Digital Elevation Model source used by D4 choke-point detection.
+# The id field is stored in ChokePoint.dem_source for evidence traceability (INV-3).
+
+dem_sources:
+  - id: "cop_glo30"
+    name: "Copernicus GLO-30 DEM"
+    resolution_m: 30
+    crs: "EPSG:4326"
+    license: "free-to-use, non-commercial"
+    attribution: "Copernicus DEM GLO-30 — © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018"
+    access: "https://dataspace.copernicus.eu/"
+    notes: "Primary DEM source for D4 choke-point detection. 30m global coverage."
+
+  - id: "srtm_30m"
+    name: "SRTM 30m (USGS/NASA)"
+    resolution_m: 30
+    crs: "EPSG:4326"
+    license: "public domain"
+    attribution: "SRTM data courtesy of NASA/USGS"
+    access: "https://earthexplorer.usgs.gov/"
+    notes: "Fallback DEM. Coverage gaps above 60° N/S latitude."

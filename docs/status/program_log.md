@@ -4,6 +4,76 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-28 — Session 10 — F-040: D4 Hydro Choke Points — COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Tasks:** F-040
+
+### What happened
+
+**F-040 — D4 Choke Points (commit pending)**
+
+Domain implementation: `argus/domains/hydro_chokepoints/` package.
+- `dem_processor.py` — pure numpy D8 flow direction + flow accumulation + upstream_area_km2().
+  No rasterio or GDAL. D8 direction offsets with distance-normalised slope to avoid diagonal bias.
+  `compute_flow_direction()` → int8 raster (-1=sink, 0–7=D8 direction).
+  `compute_flow_accumulation()` → int64 raster (count of upstream contributing cells).
+- `constriction.py` — `score_constriction()` normalises facc to [0,1].
+  `extract_choke_points()` filters by min_upstream_area_km2 + min_constriction_score, returns top-N.
+  `candidates_to_choke_points()` converts grid row/col to GeoJSON Point using bbox origin + cell_size_deg.
+- `analyzer.py` — `HydroChokepointsDomain` implements Domain protocol.
+  search(): deterministic product_id from target.id (idempotency-safe).
+  acquire(): wraps DEM ndarray from ref.attrs["dem_array"] into Acquisition.
+  analyze(): D8 pipeline → Observations(obs_type="choke_point", evidence_class="inferred", domain="hydro_chokepoints").
+  All thresholds read from acq.attrs (runner passes settings-derived values). No hardcoded thresholds (OQ-B).
+
+Store: `choke_points` table DDL + `save_choke_point()` / `get_choke_points()` / `_row_to_choke_point()`.
+Config: `HydroChokepointsConfig` (cell_size_m, min_upstream_area_km2, min_constriction_score, max_candidates, dem_source) + `DomainsConfig` added to Settings.
+settings.yaml: `domains.hydro_chokepoints` section aligned with Pydantic model keys.
+config/dem_sources.yaml: DEM source registry (cop_glo30, srtm_30m).
+runner.py: "hydro_chokepoints" registered in `_load_domain()`.
+tests/test_choke_points.py: 49 tests — D8 algorithm, constriction scoring, Domain.search/acquire/analyze, Store CRUD, end-to-end pipeline with funnel and valley DEMs.
+
+### Invariant compliance
+- INV-3: evidence_class="inferred" on all ChokePoint models and choke_point Observations; enforced at model level and tested explicitly.
+- INV-2: Domain spine not edited.
+- OQ-B: All thresholds configurable via settings.yaml; zero hardcoded values.
+- INV-7: All 49 tests fully offline (synthetic DEMs; no live Copernicus DEM fetch).
+
+### Tests
+909 passed / 0 failed (up from 859; +49 F-040 + 1 from DomainsConfig). ruff clean. mypy clean.
+
+---
+
+## 2026-06-28 — Session 9 — F-037/F-038/F-039: Phase 8 Automation & Scheduling — COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Tasks:** F-037, F-038, F-039 complete — Phase 8 (Automation & Scheduling) complete
+
+### What happened
+
+**F-037 — Per-Domain Tasking + APScheduler Scheduler (commit 70fa768)**
+- `argus/tasking/base.py` — ScheduledJob, TaskResult (with Literal status), Scheduler Protocol
+- `argus/tasking/apscheduler_backend.py` — APSchedulerBackend; RLock fixes deadlock; trigger() in daemon thread
+- `argus/tasking/quota_guard.py` — stateless quota guards, dependency-injected store
+- `argus/tasking/runner.py` — stateless run_domain_task() invokable by scheduler/CLI/Cloud Run
+- `config/schedule.yaml` — template; 34 tests
+
+**F-038 — Incremental Ingestion + Idempotency + RunHistory (commit dc39641)**
+- RunHistory model: domain, aoi, t_start/t_end, counts, status
+- Store: run_history table; get_scene_by_product_id for idempotency
+- acquire_scene(): skip re-download when product_id already ready in store
+- runner.py: save RunHistory on all paths (complete/skipped/failed); 21 tests
+
+**F-039 — Observability (commit a23ece5)**
+- RunSummary + StatusResponse extensions (domain_runs, open_meteo_calls_today)
+- GET /status: shows last-run per domain × AOI, deduped newest-first
+- Viewer: System Status panel with quota gauge and per-domain dots; 13 tests
+
+**Test count:** 825 → 859 (+34). All phases 0–8 green.
+
+---
+
 ## 2026-06-28 — Session 9 — F-037: Per-Domain Tasking + APScheduler Scheduler
 
 **Agent:** Claude claude-sonnet-4-6

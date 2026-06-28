@@ -259,4 +259,8 @@ def _load_domain(domain_id: str, settings: Settings) -> Any:
         from argus.domains.inland_wq.analyzer import InlandWqDomain
 
         return InlandWqDomain()
+    if domain_id == "hydro_chokepoints":
+        from argus.domains.hydro_chokepoints.analyzer import HydroChokepointsDomain
+
+        return HydroChokepointsDomain()
     raise ValueError(f"Unknown domain_id {domain_id!r}. Register it in argus.tasking.runner._load_domain.")

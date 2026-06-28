@@ -87,6 +87,22 @@ class PredictionConfig(BaseModel):
     oil_trajectory: OilTrajectoryConfig = Field(default_factory=OilTrajectoryConfig)
 
 
+class HydroChokepointsConfig(BaseModel):
+    """Configurable thresholds for D4 choke-point detection (OQ-B resolution)."""
+
+    cell_size_m: float = 30.0
+    min_upstream_area_km2: float = 1.0
+    min_constriction_score: float = 0.05
+    max_candidates: int = 50
+    dem_source: str = "cop_glo30"
+
+
+class DomainsConfig(BaseModel):
+    hydro_chokepoints: HydroChokepointsConfig = Field(
+        default_factory=HydroChokepointsConfig
+    )
+
+
 class Settings(BaseModel):
     cdse: CdseConfig = Field(default_factory=CdseConfig)
     open_meteo: OpenMeteoConfig = Field(default_factory=OpenMeteoConfig)
@@ -96,6 +112,7 @@ class Settings(BaseModel):
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     prediction: PredictionConfig = Field(default_factory=PredictionConfig)
+    domains: DomainsConfig = Field(default_factory=DomainsConfig)
 
 
 # Explicit mapping of env vars to (section, field) paths.
