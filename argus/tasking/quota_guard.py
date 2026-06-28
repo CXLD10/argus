@@ -45,10 +45,10 @@ def check_cdse_daily_quota(store: Store, daily_quota_gb: float = 1.0) -> QuotaDe
 def check_open_meteo_daily_quota(store: Store, daily_call_limit: int = 10_000) -> QuotaDecision:
     """Return allowed=True if estimated Open-Meteo calls today are under the daily limit.
 
-    Uses the same daily_bytes_total helper — for weather domains bytes_or_calls
-    records API call count rather than byte count.
+    Reads from RunHistory.bytes_used for weather_hydro domain records created today.
+    For weather domains bytes_used records API call count rather than byte count.
     """
-    calls_today = store.daily_bytes_total(datetime.now(UTC))
+    calls_today = store.open_meteo_calls_today(datetime.now(UTC))
     if calls_today >= daily_call_limit:
         return QuotaDecision(
             allowed=False,

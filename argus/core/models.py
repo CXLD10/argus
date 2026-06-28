@@ -18,8 +18,12 @@ VALID_OBS_TYPES: frozenset[str] = frozenset(
         "cdom",
         "surface_temp",
         "inundation",
-        "bloom_presence",  # D2: inferred from elevated chl-a proxy
-        "choke_point",    # D4: DEM-derived drainage constriction node
+        "bloom_presence",   # D2: inferred from elevated chl-a proxy
+        "choke_point",      # D4: DEM-derived drainage constriction node
+        "precip_series",    # D3: precipitation time series (Open-Meteo forecast or ERA5)
+        "discharge_series", # D3: river discharge time series (GloFAS)
+        "so2_series",       # D3: SO₂ column time series (Open-Meteo air quality or S5P)
+        "no2_series",       # D3: NO₂ column time series (Open-Meteo air quality or S5P)
     }
 )
 

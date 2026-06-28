@@ -41,6 +41,7 @@ def status(request: Request) -> StatusResponse:
     store_accessible = False
     last_run_at: datetime | None = None
     cdse_bytes_today = 0
+    open_meteo_calls = 0
     domain_runs: list[RunSummary] = []
 
     try:
@@ -48,7 +49,9 @@ def status(request: Request) -> StatusResponse:
         store.ping()
         store_accessible = True
         last_run_at = store.get_last_analysis_run_at()
-        cdse_bytes_today = store.daily_bytes_total(datetime.now(UTC))
+        now_utc = datetime.now(UTC)
+        cdse_bytes_today = store.daily_bytes_total(now_utc)
+        open_meteo_calls = store.open_meteo_calls_today(now_utc)
         domain_runs = _build_domain_runs(store)
     except Exception:
         pass
@@ -65,7 +68,7 @@ def status(request: Request) -> StatusResponse:
             cdse_remaining_bytes=remaining,
         ),
         domain_runs=domain_runs,
-        open_meteo_calls_today=0,  # populated when D3 is implemented (F-041)
+        open_meteo_calls_today=open_meteo_calls,
     )
 
 

@@ -660,6 +660,21 @@ class Store:
             ).fetchone()
         return int(row[0]) if row else 0
 
+    def open_meteo_calls_today(self, on: datetime) -> int:
+        """Sum of bytes_used from weather_hydro RunHistory records created today.
+
+        For the weather domain, RunHistory.bytes_used records API call count rather
+        than byte count (same field, different unit by convention).
+        """
+        date_prefix = on.astimezone(UTC).strftime("%Y-%m-%d")
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(bytes_used), 0) FROM run_history "
+                "WHERE domain_id = 'weather_hydro' AND SUBSTR(created_at, 1, 10) = ?",
+                (date_prefix,),
+            ).fetchone()
+        return int(row[0]) if row else 0
+
     def ping(self) -> bool:
         """Return True if the store is accessible; raise on any error."""
         with self._connect() as conn:
