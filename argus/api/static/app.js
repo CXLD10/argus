@@ -16,6 +16,9 @@ const obsLayer        = L.layerGroup().addTo(map);
 const trajectoryLayer = L.layerGroup().addTo(map);
 const impactLayer     = L.layerGroup().addTo(map);
 const wqLayer         = L.layerGroup().addTo(map);
+const chokeLayer      = L.layerGroup().addTo(map);
+const floodRiskLayer  = L.layerGroup().addTo(map);
+const acidRiskLayer   = L.layerGroup().addTo(map);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -249,6 +252,102 @@ async function loadWaterbodies() {
   }
 }
 
+// ── Choke Points (D4) ─────────────────────────────────────────────────────────
+
+function riskLevelColor(level) {
+  if (level === "extreme") return "#ef4444";
+  if (level === "high")    return "#f97316";
+  if (level === "medium")  return "#facc15";
+  return "#22c55e";
+}
+
+async function loadChokePoints(aoiId) {
+  try {
+    const res = await fetch(`/aois/${aoiId}/choke-points`);
+    if (!res.ok) return;
+    const data = await res.json();
+    chokeLayer.clearLayers();
+
+    for (const cp of data.items) {
+      if (!cp.location || cp.location.type !== "Point") continue;
+      const [lon, lat] = cp.location.coordinates;
+      const radius = 4 + Math.round(cp.constriction_score * 8);
+      L.circleMarker([lat, lon], {
+        radius,
+        color: "#60a5fa",
+        weight: 1.5,
+        opacity: 0.9,
+        fillColor: "#60a5fa",
+        fillOpacity: 0.4 + cp.constriction_score * 0.5,
+      })
+        .bindPopup(
+          `<b>Choke Point</b><br>` +
+          `Upstream area: ${cp.upstream_area_km2.toFixed(1)} km²<br>` +
+          `Constriction score: ${cp.constriction_score.toFixed(3)}<br>` +
+          `DEM: ${cp.dem_source}<br>` +
+          `<em>evidence: ${cp.evidence_class}</em>`
+        )
+        .addTo(chokeLayer);
+    }
+  } catch (err) {
+    console.error("choke points error:", err);
+  }
+}
+
+// ── Flood Risk (D3/D4) ────────────────────────────────────────────────────────
+
+async function loadFloodRisk(aoiId) {
+  try {
+    const res = await fetch(`/aois/${aoiId}/flood-risk`);
+    if (!res.ok) return;
+    const data = await res.json();
+    floodRiskLayer.clearLayers();
+
+    for (const pred of data.items) {
+      if (!pred.risk_level) continue;
+      const color = riskLevelColor(pred.risk_level);
+      // Flood risk is AOI-wide — render as a status banner in the layer (no geometry)
+      const el = document.getElementById("flood-risk-indicator");
+      if (el) {
+        el.style.display = "";
+        el.style.color = color;
+        el.textContent = `Flood risk: ${pred.risk_level.toUpperCase()}`;
+        el.title = pred.label || "";
+      }
+      break; // show the most recent only
+    }
+  } catch (err) {
+    console.error("flood risk error:", err);
+  }
+}
+
+// ── Acid Deposition Risk (D3) ─────────────────────────────────────────────────
+
+async function loadAcidRisk(aoiId) {
+  try {
+    const res = await fetch(`/aois/${aoiId}/acid-risk`);
+    if (!res.ok) return;
+    const data = await res.json();
+    acidRiskLayer.clearLayers();
+
+    for (const pred of data.items) {
+      if (pred.acid_risk_index == null) continue;
+      const idx = pred.acid_risk_index;
+      const color = idx >= 7 ? "#ef4444" : idx >= 4 ? "#f97316" : "#22c55e";
+      const el = document.getElementById("acid-risk-indicator");
+      if (el) {
+        el.style.display = "";
+        el.style.color = color;
+        el.textContent = `Acid risk index: ${idx.toFixed(1)}/10`;
+        el.title = pred.label || "";
+      }
+      break;
+    }
+  } catch (err) {
+    console.error("acid risk error:", err);
+  }
+}
+
 // ── System status panel (F-039) ───────────────────────────────────────────────
 
 async function loadSystemStatus() {
@@ -317,6 +416,9 @@ async function bootstrap() {
       loadImpact(aoi.id),
       loadWaterbodies(),
       loadSystemStatus(),
+      loadChokePoints(aoi.id),
+      loadFloodRisk(aoi.id),
+      loadAcidRisk(aoi.id),
     ]);
 
     updateStatus(`${aoi.name} — ready`);

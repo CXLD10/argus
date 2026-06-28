@@ -458,6 +458,15 @@ class Store:
             ).fetchall()
         return [_row_to_prediction(r) for r in rows]
 
+    def get_predictions_by_predictor(self, predictor_id: str) -> list[Prediction]:
+        """Return all Predictions from a given predictor, sorted by created_at descending."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM predictions WHERE predictor_id = ? ORDER BY created_at DESC",
+                (predictor_id,),
+            ).fetchall()
+        return [_row_to_prediction(r) for r in rows]
+
     def get_waterbody_targets(self) -> list[str]:
         """Return distinct target_ids from WQ domain observations (inland_wq)."""
         with self._connect() as conn:

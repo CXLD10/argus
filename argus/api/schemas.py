@@ -147,6 +147,39 @@ class AIReportResponse(BaseModel):
     )
 
 
+class ChokePointSchema(BaseModel):
+    id: str = Field(description="Unique choke-point ID.")
+    aoi_id: str = Field(description="AOI this choke point belongs to.")
+    location: dict[str, Any] = Field(description="GeoJSON Point geometry of the choke point.")
+    upstream_area_km2: float = Field(description="Upstream catchment area in km².")
+    constriction_score: float = Field(description="Constriction score in [0, 1]; 1.0 = maximum.")
+    dem_source: str = Field(description="DEM product used for flow-accumulation.")
+    evidence_class: str = Field(description="Always 'inferred' (derived from DEM flow model, INV-3).")
+
+
+class ChokePointListResponse(BaseModel):
+    items: list[ChokePointSchema] = Field(description="Choke points sorted by constriction_score desc.")
+    count: int = Field(description="Total number of choke points returned.")
+
+
+class RiskPredictionSchema(BaseModel):
+    id: str = Field(description="Unique prediction ID.")
+    predictor_id: str = Field(description="Predictor that produced this risk assessment.")
+    kind: str = Field(description="Always 'risk' for risk predictors.")
+    evidence_class: str = Field(description="Always 'modeled' (INV-3).")
+    label: str = Field(description="Honesty label explicitly stating what this value is and isn't.")
+    risk_score: float | None = Field(default=None, description="Numeric risk score (0–1 for flood risk).")
+    risk_level: str | None = Field(default=None, description="Categorical level: low | medium | high | extreme.")
+    acid_risk_index: float | None = Field(default=None, description="Acid-deposition index (0–10 scale).")
+    uncertainty: dict[str, Any] = Field(description="Uncertainty quantification (INV-9).")
+    created_at: str = Field(description="ISO-8601 UTC timestamp.")
+
+
+class RiskPredictionListResponse(BaseModel):
+    items: list[RiskPredictionSchema] = Field(description="Risk predictions sorted by created_at desc.")
+    count: int = Field(description="Total number of risk predictions returned.")
+
+
 class WaterbodyListResponse(BaseModel):
     target_ids: list[str] = Field(description="Distinct water body target IDs with WQ observations.")
     count: int = Field(description="Total number of water bodies.")

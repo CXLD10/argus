@@ -204,6 +204,98 @@ def create_hab_alert(
     )
 
 
+_FLOOD_ALERT_LEVELS: frozenset[str] = frozenset({"high", "extreme"})
+_ACID_ALERT_INDEX_THRESHOLD: float = 7.0
+
+
+def should_alert_flood_risk(prediction: Any) -> bool:
+    """Return True when FloodRisk level is 'high' or 'extreme'.
+
+    Dual-purpose gate — only high-severity events warrant an alert to avoid
+    alert fatigue from routine medium-risk events.
+    """
+    return str(prediction.attrs.get("risk_level", "")) in _FLOOD_ALERT_LEVELS
+
+
+def create_flood_risk_alert(
+    aoi_id: str,
+    aoi_name: str,
+    prediction: Any,
+    *,
+    choke_point_count: int = 0,
+) -> Alert:
+    """Create an advisory Alert for a high/extreme FloodRisk prediction.
+
+    The alert is advisory only — no automated action is taken.
+    """
+    risk_level = prediction.attrs.get("risk_level", "unknown")
+    risk_score = prediction.uncertainty.get("risk_score", 0.0)
+    peak_precip = prediction.attrs.get("peak_precip_mm")
+    peak_discharge = prediction.attrs.get("peak_discharge_m3s")
+
+    parts = [f"FloodRisk {risk_level} — {aoi_name}"]
+    if peak_precip is not None:
+        parts.append(f"peak precip {peak_precip:.0f} mm")
+    if peak_discharge is not None:
+        parts.append(f"peak discharge {peak_discharge:.0f} m³/s")
+    if choke_point_count:
+        parts.append(f"{choke_point_count} choke point(s) at risk")
+
+    return Alert(
+        domain="weather_hydro",
+        target=aoi_name,
+        prediction_id=prediction.id,
+        confidence=float(risk_score),
+        message=", ".join(parts),
+        details={
+            "aoi_id": aoi_id,
+            "risk_level": risk_level,
+            "risk_score": risk_score,
+            "peak_precip_mm": peak_precip,
+            "peak_discharge_m3s": peak_discharge,
+            "choke_point_count": choke_point_count,
+            "label": prediction.attrs.get("label", ""),
+        },
+    )
+
+
+def should_alert_acid_risk(prediction: Any) -> bool:
+    """Return True when AcidDepositionRisk index >= 7.0 (high risk threshold)."""
+    return float(prediction.attrs.get("acid_risk_index", 0.0)) >= _ACID_ALERT_INDEX_THRESHOLD
+
+
+def create_acid_risk_alert(
+    aoi_id: str,
+    aoi_name: str,
+    prediction: Any,
+) -> Alert:
+    """Create an advisory Alert for a high AcidDepositionRisk event.
+
+    The alert is explicitly advisory — this is a modeled risk index, NOT a pH measurement.
+    """
+    acid_index = prediction.attrs.get("acid_risk_index", 0.0)
+    peak_so2 = prediction.attrs.get("peak_so2_ug_m3")
+
+    parts = [f"AcidDepositionRisk index {acid_index:.1f}/10 — {aoi_name}"]
+    if peak_so2 is not None:
+        parts.append(f"peak SO₂ {peak_so2:.0f} µg/m³")
+    parts.append("(modeled risk index — NOT a pH measurement)")
+
+    return Alert(
+        domain="weather_hydro",
+        target=aoi_name,
+        prediction_id=prediction.id,
+        confidence=min(float(acid_index) / 10.0, 1.0),
+        message=", ".join(parts),
+        details={
+            "aoi_id": aoi_id,
+            "acid_risk_index": acid_index,
+            "peak_so2_ug_m3": peak_so2,
+            "label": prediction.attrs.get("label", ""),
+        },
+    )
+
+
 def send_alert(
     alert: Alert,
     channels: list[AlertChannel],
