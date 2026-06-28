@@ -88,3 +88,39 @@ prediction:
     # oil_type must be specified explicitly per run — no default.
     simulation_hours: 72
     particle_count: 1000
+
+# ── Scheduler (ADR-0007: Option B — APScheduler) ─────────────────────────────
+
+scheduler:
+  # Set false to disable the background scheduler (e.g. in test environments).
+  enabled: false
+  # Schedule jobs: one entry per domain × AOI pair.
+  jobs:
+    - job_id: "marine_oil_tobago"
+      domain_id: "marine_oil"
+      aoi_id: "tobago"
+      cadence_hours: 24
+      enabled: false  # enable when CDSE credentials are configured
+    - job_id: "inland_wq_reference"
+      domain_id: "inland_wq"
+      aoi_id: "reference_region"
+      cadence_hours: 120   # ~5 days (Sentinel-2 revisit cycle)
+      enabled: false
+
+# ── Domain configuration ──────────────────────────────────────────────────────
+
+domains:
+  hydro_chokepoints:
+    # Minimum upstream contributing cells for a choke-point candidate.
+    # Configurable per OQ-B resolution: no hardcoded thresholds (Josh, 2026-06-28).
+    flow_acc_threshold_cells: 100
+    # Number of top-scoring choke points to extract per AOI.
+    top_n_chokepoints: 10
+    # DEM grid cell size in metres (Copernicus GLO-30 = 30m).
+    cell_size_m: 30.0
+  flood_risk:
+    # Cumulative 72-hour rainfall threshold for high-risk classification (mm).
+    threshold_mm: 100.0
+  acid_deposition:
+    # Default catchment sensitivity multiplier (1.0 = neutral; >1 = sensitive).
+    default_catchment_sensitivity: 1.0

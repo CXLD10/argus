@@ -7,14 +7,19 @@
 
 ---
 
-## GATE: OQ-B Must Be Resolved
+## GATE: OQ-B RESOLVED (2026-06-28)
 
-F-040 (first feature of this domain) is blocked until OQ-B is resolved. Do not implement
-a provisional definition. The interpretation of "choke point" determines the entire D4
-analysis approach.
+OQ-B is resolved. F-040 may proceed.
 
-**Current provisional definition (ADR-0003 D4):** A node on the DEM-derived drainage
-network with high upstream contributing area passing through a topographic/width constriction.
+**Confirmed definition:** A choke point is a spatial location where terrain, drainage
+topology, waterways or infrastructure naturally constrain or concentrate environmental flow,
+contaminant transport or flood propagation.
+
+**First implementation:** DEM-derived flow accumulation (D8 algorithm) → drainage-network
+extraction → constriction scoring. Thresholds are configurable in `settings.yaml` under
+`domains.hydro_chokepoints`. The algorithm is encapsulated behind a `DemProcessor` abstraction
+so future methods (stormwater network, infrastructure overlay) can be added without changing
+the Domain protocol implementation.
 
 ---
 

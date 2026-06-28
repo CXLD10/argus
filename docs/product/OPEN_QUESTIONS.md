@@ -43,22 +43,24 @@ model honest (different oils behave differently) and the architecture extensible
 
 ### OQ-B — Choke Point Definition
 
-**Question:** Is a "choke point" (a) a DEM flow-accumulation bottleneck with a topographic
-width constriction (current ADR-0003 D4 working definition), (b) a stormwater-network
-bottleneck, or (c) a pollutant-accumulation basin?
+**Status:** RESOLVED — 2026-06-28
 
-**Impact if unresolved:** Blocks F-040 (D4 choke-point derivation). Phase 9 cannot start.
+**Resolution:**
 
-**Current default (provisional):** ADR-0003 D4 — DEM-derived drainage-constriction node
-(high upstream contributing area + narrow topographic passage). This is provisional and
-labeled as such in all Phase 9 specs.
+A choke point is defined as:
 
-**Decision needed from:** Josh
+> A spatial location where terrain, drainage topology, waterways or infrastructure naturally
+> constrain or concentrate environmental flow, contaminant transport or flood propagation.
 
-**Options:**
-1. Confirm drainage-constriction node definition (ADR-0003 D4 default)
-2. Redefine as stormwater-network bottleneck (requires vector network data)
-3. Redefine as pollutant-accumulation basin (requires concentration modeling)
+The first implementation uses **DEM-derived flow accumulation** as the primary detection
+method. Flow accumulation thresholds are **configurable in `settings.yaml`** — no hardcoded
+values. The D4 implementation must remain extensible for future datasets (infrastructure
+layers, stormwater networks) and improved algorithms without requiring architectural changes.
+
+**Confirmed approach:** DEM flow-direction → flow-accumulation → drainage-constriction scoring.
+Thresholds are configurable. Top-N choke-point nodes are extracted per AOI.
+
+**Phase 9 is now unblocked.** F-040 can proceed.
 
 ---
 
