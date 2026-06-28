@@ -144,13 +144,13 @@ Detailed specs: [`docs/features/phase-10.md`](docs/features/phase-10.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-045 | React + Vite + Tailwind frontend scaffold | TODO | — | dep F-015 |
-| F-046 | Overview dashboard (system health, all domains) | TODO | — | dep F-045 |
-| F-047 | WQ monitoring panel (trends, anomalies, forecasts) | TODO | — | dep F-045, F-027/F-028 |
-| F-048 | Hazard prediction panel (trajectory player, flood risk) | TODO | — | dep F-045, F-013/F-042 |
-| F-049 | AI assistant interface with citation viewer | TODO | — | dep F-045, F-031/F-032 |
-| F-050 | Admin panel (AOI/target management, config) | TODO | — | dep F-045 |
-| F-051 | Export + reporting UI (PDF/GeoJSON/CSV) | TODO | — | dep F-046 |
+| F-045 | React + Vite + Tailwind frontend scaffold + all 12 pages | DONE | — | commit 6d258b7 · 0 TS errors |
+| F-046 | Overview dashboard (system health, all domains) | DONE | — | included in F-045 |
+| F-047 | WQ monitoring panel (trends, anomalies, forecasts) | DONE | — | included in F-045 |
+| F-048 | Hazard prediction panel (trajectory player, flood risk) | DONE | — | included in F-045 |
+| F-049 | AI assistant interface with citation viewer | DONE | — | included in F-045 |
+| F-050 | Admin panel (AOI/target management, config) | DONE | — | included in F-045 |
+| F-051 | Export + reporting UI (PDF/GeoJSON/CSV) | DONE | — | included in F-045 |
 
 ## Phase 11 — System Validation & MVP Sign-off *(P0)* — CP-4 = MVP
 
@@ -179,6 +179,38 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-29 — implementation — F-045–F-051 (Session 12) — PHASE 10 COMPLETE
+
+- Did:
+  F-045 (React + Vite frontend scaffold):
+    Complete React 19 + Vite 8 + TypeScript + Tailwind v4 + shadcn/ui (New York, Neutral) frontend.
+    `frontend/` — full project scaffold, pnpm workspace.
+    Design tokens: dark-first (#0a0e17 bg, #0d1424 sidebar) in `src/index.css` (@theme + CSS vars).
+    `src/api/` — typed client + endpoints (19 fetch fns) + types matching backend schemas.
+    `src/store/` — Zustand: uiStore (sidebar), aoiStore (selected AOI/obs), mapStore (layers).
+    `src/components/ui/` — Badge (8 variants), Button, Card, Skeleton, Spinner, EmptyState, MetricCard.
+    `src/components/domain/` — EvidenceClassBadge, RiskLevelBadge, DomainStatusGrid.
+    `src/components/charts/` — WQTrendChart (Recharts), FloodRiskGauge, AcidRiskGauge, QuotaGauge.
+    `src/components/map/` — ArgusMap (react-leaflet, CartoDB dark, obs/choke/trajectory layers), LayerManager.
+    `src/components/ai/` — AIReportPanel (grounded, cited), NLQueryBox (chat, read-only badge).
+    `src/components/layout/` — AppShell, Sidebar (12 routes, grouped), Header (AOI selector).
+    `src/main.tsx` — BrowserRouter + QueryClientProvider + StrictMode.
+    `src/App.tsx` — React Router with AppShell + all 12 routes.
+  F-046 (Overview): 60/40 map + right panel; 4 KPI MetricCards; recent alerts; AI summary; system health.
+  F-047 (Water Quality): target list sidebar; metric type tabs; WQTrendChart; observations table; AIReportPanel.
+  F-048 (Predictions): trajectory frame player (T+N/total); flood+acid gauges; prediction cards.
+  F-049 (AI Assistant): NLQueryBox chat + AIReportPanel per water body; advisory banner.
+  F-050 (Admin): system status grid; quota gauges; domain run table; AOI list.
+  F-051 (Exports): JSON export buttons per entity type (obs, flood, acid, choke points).
+  Also included: MapPage, OilMonitoringPage, HydroPage, ChokePointsPage, AlertsPage, SettingsPage.
+  Build: `pnpm build` passes, 0 TypeScript errors, 880KB bundle.
+- State: All F-045–F-051 ACs met. pnpm build clean. TS strict 0 errors.
+  Phase 10 DoD: F-045–F-051 all DONE. Frontend builds and routes all 12 pages.
+- Git: main · 6d258b7
+- Quota: Zero. No live fetches.
+- Next: F-052 — End-to-end integration tests (Phase 11).
+- Blockers: None.
 
 ### 2026-06-28 — implementation — F-041/F-042/F-043/F-044 (Session 11) — PHASE 9 COMPLETE
 

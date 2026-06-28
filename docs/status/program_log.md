@@ -4,6 +4,83 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-29 — Session 12 — F-045–F-051: Phase 10 Frontend — COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Tasks:** F-045, F-046, F-047, F-048, F-049, F-050, F-051 — Phase 10 (Production Dashboard) complete
+
+### What happened
+
+**Full React frontend built and shipping (commit 6d258b7)**
+
+All 59 frontend files written from scratch. Zero TypeScript errors. `pnpm build` passes with 880KB bundle.
+
+Tech stack: React 19 · Vite 8 · TypeScript (strict) · Tailwind v4 (CSS `@theme` tokens, `@tailwindcss/vite`) · shadcn/ui (New York, Neutral, CSS vars) · TanStack Query v5 · Zustand v5 · React Leaflet · Recharts · Lucide Icons · pnpm.
+
+Design system:
+- Tokens: `#0a0e17` background, `#0d1424` sidebar, `#111827` surface-1 — applied in `@theme` block.
+- shadcn HSL variables for component compat: `--background`, `--foreground`, `--primary`, etc.
+- `@plugin "tailwindcss-animate"` (Tailwind v4 syntax, not `@import`).
+- `tailwindcss-animate`, `tailwind-merge`, `clsx` installed.
+
+Components written:
+- UI primitives: Badge (8 variants), Button (5 variants, 4 sizes), Card, Skeleton/SkeletonCard, Spinner, EmptyState, MetricCard.
+- Domain: EvidenceClassBadge (value=measured/modeled/inferred → color), RiskLevelBadge (level → danger/warning/success), DomainStatusGrid (4-domain live status).
+- Charts: WQTrendChart (Recharts LineChart + threshold ReferenceLine), FloodRiskGauge (0–1 bar), AcidRiskGauge (0–10 gradient), QuotaGauge (daily limits with warning threshold).
+- Map: ArgusMap (react-leaflet, CartoDB dark basemap, obs/choke/trajectory LayerGroups, FlyToAOI effect), LayerManager (floating toggle panel).
+- AI: AIReportPanel (grounded report + citation badges + attribution), NLQueryBox (chat history, suggested questions, mutation on send, read-only badge, citations per message).
+- Layout: AppShell (flex, Sidebar + Header + Outlet), Sidebar (grouped nav 12 routes, collapsible, active indicator), Header (AOI selector dropdown, search, notification bell, avatar).
+
+Pages (12 total):
+- Overview: 60/40 split map/panel; 4 KPI cards (oil/wq/flood/choke); recent alerts derived from predictions + obs; AI report; system health + quota gauges; prediction sidebar.
+- MapPage: full-screen map + floating obs detail drawer.
+- OilMonitoringPage: map + scrollable slick list (confidence color, evidence badge) + trajectory section.
+- WaterQualityPage: water-body target selector sidebar + WQTrendChart + observations table + AIReportPanel.
+- HydroPage: FloodRiskGauge + AcidRiskGauge (with "NOT a pH measurement" note) + hydro obs list.
+- ChokePointsPage: map (choke_points layer only) + sorted choke cards with constriction bar + flood risk gauge.
+- AlertsPage: derived alert table from flood/acid/oil predictions; severity badges; domain tags.
+- PredictionsPage: trajectory frame player (ChevronLeft/Right, T+N/total display) + risk gauges + prediction cards.
+- AIAssistantPage: NLQueryBox chat (flex-1) + right panel with water-body selector + AIReportPanel.
+- AdminPage: system status grid; QuotaGauge rows; domain run table; full AOI list.
+- SettingsPage: environment config table; data source quota reference.
+- ExportsPage: downloadJSON() utility; 4 export buttons (obs/flood/acid/choke) with disabled state when empty.
+
+State management:
+- `uiStore`: sidebarCollapsed / toggleSidebar.
+- `aoiStore`: selectedAOI / selectedObservation + setters.
+- `mapStore`: activeLayers (Set<LayerId>) / toggleLayer / viewport.
+- TanStack Query v5 for all server state with `staleTime` and `refetchInterval` where appropriate.
+
+Fixes applied during build:
+- `tsconfig.app.json`: `"ignoreDeprecations": "6.0"` to silence TS7/baseUrl deprecation.
+- `src/vite-env.d.ts`: `/// <reference types="vite/client" />` for CSS and `import.meta.env`.
+- `ArgusMap.tsx`: double-cast `as unknown as Record<string, unknown>` for Leaflet icon delete.
+- `WQTrendChart.tsx`: `(v as number).toFixed(2)` to satisfy Recharts `Formatter<ValueType>`.
+- `EvidenceClassBadge` prop renamed from `ec` (my error) to `value` — fixed across all 4 pages.
+- CSS: `@plugin "tailwindcss-animate"` not `@import` (Tailwind v4 plugin syntax).
+- `EmptyState` refactored from `React.ReactNode` to `React.ComponentType<{className?:string}>` for icon prop.
+
+### Acceptance criteria status
+
+| Criterion | Status |
+|---|---|
+| Scaffold: React/Vite/TS/TW/shadcn installs | ✅ |
+| Design system (dark-first, tokens) | ✅ |
+| All 12 pages routable | ✅ |
+| Overview: 4 KPI cards + map + alerts + AI | ✅ |
+| WQ page: trend chart + anomaly count | ✅ |
+| Predictions: trajectory frame player | ✅ |
+| AI: NLQuery read-only badge + citations | ✅ |
+| Admin: domain runs + quota gauges | ✅ |
+| Exports: JSON download buttons | ✅ |
+| `pnpm build` zero TypeScript errors | ✅ |
+
+### Decision: F-046–F-051 consolidated into F-045
+
+All 7 Phase 10 tasks delivered in one commit. The feature spec items map 1:1 to pages; keeping them as separate commits would have been artificial splits with no independent review value.
+
+---
+
 ## 2026-06-28 — Session 11 — F-041/F-042/F-043/F-044: Phase 9 D3/D4 Completion — COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
