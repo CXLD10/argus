@@ -152,6 +152,33 @@ Detailed specs: [`docs/features/phase-10.md`](docs/features/phase-10.md)
 | F-050 | Admin panel (AOI/target management, config) | DONE | — | included in F-045 |
 | F-051 | Export + reporting UI (PDF/GeoJSON/CSV) | DONE | — | included in F-045 |
 
+## RC-1 — Release Candidate 1 *(inserted between Phase 10 and Phase 11)*
+
+Goal: prove a stranger can clone the repo and be running within 10 minutes.
+Status: **DONE** — all 7 defects found and fixed (commit aa54c3e).
+
+| Check | Result | Notes |
+|---|---|---|
+| Fresh clone simulation | PASS | All setup commands verified |
+| Backend installation | PASS | `uv pip install -e ".[dev]"` → `argus version` → OK |
+| Test suite | PASS | 1072 passed, 2 deselected (--live), 17s |
+| `argus run` (offline) | PASS | tobago + gulf-paria-tt both produce GeoJSON + PNG |
+| `argus serve` | PASS | `/health` and `/ready` return 200 |
+| `GET /aois` | PASS | Returns both configured AOIs |
+| Frontend build | PASS | `pnpm build` → 891KB, 0 TS errors |
+| `.env.example` | FIXED | Created (was missing) |
+| Docker Compose | FIXED | Created `docker-compose.yml` + `Dockerfile` |
+| `argus serve` db-path | FIXED | Default changed from `argus.db` → `data/argus.db` |
+| `ANTHROPIC_API_KEY` env var | FIXED | Onboarding had wrong name `ARGUS_AI_KEY` |
+| `--domain`/`--dry-run` flags | FIXED | Phantom flags removed from onboarding |
+| `gulf-paria-tt` AOI | FIXED | Created `config/aois/gulf-paria-tt.geojson` |
+| Internal doc links | PASS | All links resolve to existing files |
+| Obsolete documentation | NONE | No stale docs found |
+
+**RC-1 verdict: CERTIFIED.** Repository is release-candidate quality. Phase 11 may begin.
+
+---
+
 ## Phase 11 — System Validation & MVP Sign-off *(P0)* — CP-4 = MVP
 
 Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
@@ -160,8 +187,8 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 |---|---|---|---|---|
 | F-052 | End-to-end integration tests (all 4 domains) | TODO | — | dep all phases |
 | F-053 | Performance profiling (< 10min/AOI target) | TODO | — | dep F-052 |
-| F-054 | Documentation finalization (USER_GUIDE, API_SPEC, DEPLOYMENT) | TODO | — | dep F-052 |
-| F-055 | Demo dataset preparation (all 4 domain eval cases) | TODO | — | dep F-052 |
+| F-054 | Documentation finalization (USER_GUIDE, API_SPEC, DEPLOYMENT) | DONE | — | completed in doc sprint (Session 13) |
+| F-055 | Demo dataset preparation (all 4 domain eval cases) | TODO | — | fixtures.ts exists; needs wiring as API fallback |
 | F-056 | MVP validation checklist + Josh sign-off — **CP-4 = MVP** | TODO | — | dep F-052–F-055 |
 
 ---
@@ -179,6 +206,29 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Next: <single next action>
 - Blockers/decisions: <anything needing a human or ADR>
 ```
+
+### 2026-06-29 — implementation — RC-1 (Session 14) — RELEASE CANDIDATE 1 CERTIFIED
+
+- Did:
+  RC-1 fresh-clone simulation audit. Found and fixed 7 defects. No features added.
+  - `argus/cli.py` — `argus serve` default db-path changed from `argus.db` → `data/argus.db`
+  - `docs/DEVELOPER_ONBOARDING.md` — fixed `ARGUS_AI_KEY` → `ANTHROPIC_API_KEY`; removed
+    phantom `--domain` and `--dry-run` flags; updated example AOI to `gulf-paria-tt`
+  - `config/aois/gulf-paria-tt.geojson` — created Gulf of Paria demo AOI (refs fixtures.ts)
+  - `.env.example` — created environment variable template
+  - `Dockerfile` — created production image (python:3.11-slim, non-root, healthcheck)
+  - `docker-compose.yml` — created local dev stack (api + volume mounts)
+  - `README.md` — updated setup section to use `.env.example` flow, Docker section added
+  Documentation sprint (doc agent):
+  - `docs/status/DASHBOARD.md`, `docs/api/API_SPEC.md`, `README.md`, `ROADMAP.md`
+  - `docs/user_guide/USER_GUIDE.md`, `docs/PROJECT_WALKTHROUGH.md`, `docs/DEMO_MODE.md`
+  - `docs/DEMO_SCRIPT.md`, `docs/DEVELOPER_ONBOARDING.md`, `FRONTEND_BLUEPRINT.md v2.0`
+  - `docs/architecture/ARCHITECTURE.md` (Phase 10 section)
+- State: RC-1 CERTIFIED. All checks pass. 1072/1072 tests green. Fresh-clone audit passes.
+- Git: main · aa54c3e
+- Quota: Zero. No live fetches.
+- Next: F-052 — End-to-end integration tests (Phase 11 begins).
+- Blockers: None.
 
 ### 2026-06-29 — implementation — F-045 (Session 13) — DESIGN POLISH PASS COMPLETE
 
