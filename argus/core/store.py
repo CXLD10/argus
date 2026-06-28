@@ -394,6 +394,40 @@ class Store:
             ).fetchall()
         return [_row_to_prediction(r) for r in rows]
 
+    def get_predictions_for_target(
+        self,
+        target_id: str,
+        kind: str | None = None,
+    ) -> list[Prediction]:
+        """Return Predictions whose source observations include any obs for *target_id*.
+
+        Avoids adding target_id to the predictions table by resolving via the
+        observations table. Returns predictions sorted by created_at ascending.
+        """
+        obs_rows = self.get_observations_by_target(target_id)
+        if not obs_rows:
+            return []
+        obs_ids = {o.id for o in obs_rows}
+        candidates = self.get_predictions_by_kind(kind) if kind else self._get_all_predictions()
+        return [p for p in candidates if any(sid in obs_ids for sid in p.source_obs_ids)]
+
+    def _get_all_predictions(self) -> list[Prediction]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM predictions ORDER BY created_at ASC"
+            ).fetchall()
+        return [_row_to_prediction(r) for r in rows]
+
+    def get_waterbody_targets(self) -> list[str]:
+        """Return distinct target_ids from WQ domain observations (inland_wq)."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT DISTINCT target_id FROM observations "
+                "WHERE domain = 'inland_wq' AND target_id IS NOT NULL "
+                "ORDER BY target_id"
+            ).fetchall()
+        return [r[0] for r in rows]
+
     # ── ForecastFrame CRUD (scaffold — F-011) ────────────────────────────────
 
     def save_forecast_frame(self, frame: ForecastFrame) -> None:

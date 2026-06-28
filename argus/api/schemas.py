@@ -147,6 +147,11 @@ class AIReportResponse(BaseModel):
     )
 
 
+class WaterbodyListResponse(BaseModel):
+    target_ids: list[str] = Field(description="Distinct water body target IDs with WQ observations.")
+    count: int = Field(description="Total number of water bodies.")
+
+
 class ImpactAssessmentSchema(BaseModel):
     id: str = Field(description="Unique impact-assessment ID.")
     prediction_id: str = Field(description="Source Prediction ID.")

@@ -48,12 +48,13 @@ class Alert:
     confidence: float = 0.0
     eta_hours: float | None = None
     message: str = ""
+    details: dict[str, Any] = field(default_factory=dict)
     status: str = "pending"  # pending | sent | failed
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_payload(self) -> dict[str, Any]:
         """Serialise alert to a JSON-safe dict for transport."""
-        return {
+        payload: dict[str, Any] = {
             "id": self.id,
             "domain": self.domain,
             "target": self.target,
@@ -64,6 +65,9 @@ class Alert:
             "message": self.message,
             "created_at": self.created_at.isoformat(),
         }
+        if self.details:
+            payload["details"] = self.details
+        return payload
 
 
 def load_channels(path: Path) -> list[AlertChannel]:
@@ -127,6 +131,77 @@ def _send_email(alert: Alert, channel: AlertChannel) -> None:
         if channel.username and channel.password:
             smtp.login(channel.username, channel.password)
         smtp.send_message(msg)
+
+
+_HAB_ALERT_SIGMA_THRESHOLD: float = 2.5   # z-score threshold for anomaly trigger
+_HAB_BLOOM_RISK_THRESHOLD: float = 25.0   # µg/L chlorophyll-a threshold for forecast trigger
+
+
+def should_alert_hab(
+    anomaly_pred: Any,
+    forecast_pred: Any,
+    *,
+    alert_sigma_threshold: float = _HAB_ALERT_SIGMA_THRESHOLD,
+    bloom_risk_threshold: float = _HAB_BLOOM_RISK_THRESHOLD,
+) -> bool:
+    """Return True when BOTH anomaly AND forecast exceed their thresholds.
+
+    HAB early-warning fires only when two independent signals align:
+    - anomaly z_score > threshold (current deviation from baseline)
+    - forecast value > bloom_risk_threshold (predicted bloom in 7 days)
+
+    This dual-signal gate reduces false positives (INV-3: advisory, not automated action).
+    """
+    anomaly_sigma = abs(float(anomaly_pred.attrs.get("z_score", 0.0)))
+    forecast_value = float(forecast_pred.attrs.get("value", 0.0))
+    return bool(anomaly_sigma > alert_sigma_threshold and forecast_value > bloom_risk_threshold)
+
+
+def create_hab_alert(
+    target_id: str,
+    target_name: str,
+    anomaly_pred: Any,
+    forecast_pred: Any,
+    *,
+    intakes_threatened: int = 0,
+    recreation_sites_threatened: int = 0,
+) -> Alert:
+    """Create an Alert for a HAB (Harmful Algal Bloom) early-warning event.
+
+    The alert is advisory only — no automated action is taken. The payload includes
+    the water body name, anomaly sigma, bloom-risk forecast value, and impact counts
+    for downstream human review.
+    """
+    anomaly_sigma = round(abs(anomaly_pred.attrs.get("z_score", 0.0)), 4)
+    forecast_value = round(forecast_pred.attrs.get("value", 0.0), 4)
+    horizon_days = forecast_pred.attrs.get("horizon_days", 7)
+
+    message = (
+        f"HAB early-warning: {target_name} — "
+        f"anomaly z={anomaly_sigma:.1f}σ, "
+        f"forecast chl-a={forecast_value:.1f} µg/L ({horizon_days}d horizon)"
+    )
+    if intakes_threatened:
+        message += f", {intakes_threatened} intake(s) at risk"
+    if recreation_sites_threatened:
+        message += f", {recreation_sites_threatened} recreation site(s) at risk"
+
+    return Alert(
+        domain="inland_wq",
+        target=target_name,
+        observation_id=anomaly_pred.source_obs_ids[0] if anomaly_pred.source_obs_ids else None,
+        prediction_id=forecast_pred.id,
+        confidence=min(anomaly_sigma / 5.0, 1.0),  # scaled 0–1
+        message=message,
+        details={
+            "target_id": target_id,
+            "anomaly_sigma": anomaly_sigma,
+            "bloom_risk_forecast": forecast_value,
+            "intakes_threatened": intakes_threatened,
+            "recreation_sites_threatened": recreation_sites_threatened,
+            "horizon_days": horizon_days,
+        },
+    )
 
 
 def send_alert(

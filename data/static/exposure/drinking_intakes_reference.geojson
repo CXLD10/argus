@@ -1,0 +1,11 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Reference Lake Drinking Intake (Synthetic)",
+    "layer_type": "drinking_intake"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-60.5005, 10.5005]
+  }
+}

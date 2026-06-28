@@ -1,0 +1,11 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Reference Lake Recreation Site (Synthetic)",
+    "layer_type": "recreation_site"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-60.501, 10.5012]
+  }
+}

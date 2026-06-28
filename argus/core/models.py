@@ -176,7 +176,7 @@ class ExposureLayer(BaseModel):
 
     id: str
     name: str
-    layer_type: Literal["coastline", "marine_protected_area"]
+    layer_type: Literal["coastline", "marine_protected_area", "drinking_intake", "recreation_site"]
     geometry: dict[str, Any]  # GeoJSON geometry (LineString or Polygon)
     attrs: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

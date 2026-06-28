@@ -173,6 +173,134 @@ def export_products(
     return artifacts
 
 
+# ── D2 Water Quality product exports ─────────────────────────────────────────
+
+
+def export_wq_geojson(
+    water_bodies: list[dict[str, Any]],
+    path: Path,
+) -> Path:
+    """Write a GeoJSON FeatureCollection of flagged water bodies.
+
+    Each entry in *water_bodies* must have keys: target_id, name, geometry (GeoJSON),
+    anomaly_sigma, forecast_value, intakes_threatened.
+    Only water bodies with anomaly_sigma > 0 or forecast_value > 0 are included.
+    """
+    features = []
+    for wb in water_bodies:
+        features.append({
+            "type": "Feature",
+            "geometry": wb["geometry"],
+            "properties": {
+                "target_id": wb["target_id"],
+                "name": wb.get("name", wb["target_id"]),
+                "anomaly_sigma": wb.get("anomaly_sigma", 0.0),
+                "forecast_value": wb.get("forecast_value", 0.0),
+                "intakes_threatened": wb.get("intakes_threatened", 0),
+                "recreation_sites_threatened": wb.get("recreation_sites_threatened", 0),
+            },
+        })
+    collection: dict[str, Any] = {"type": "FeatureCollection", "features": features}
+    path.write_text(json.dumps(collection, indent=2))
+    return path
+
+
+def export_wq_png(
+    water_bodies: list[dict[str, Any]],
+    path: Path,
+) -> Path:
+    """Write a PNG showing water bodies colored by bloom-risk level.
+
+    Color scale: green (normal) → orange (elevated) → red (high risk).
+    """
+    fig = Figure(figsize=(8, 6), dpi=100)
+    FigureCanvasAgg(fig)
+    ax = fig.add_subplot(111)
+
+    def _bloom_color(sigma: float) -> str:
+        if abs(sigma) >= 3.0:
+            return "#ef4444"
+        if abs(sigma) >= 2.0:
+            return "#f97316"
+        return "#22c55e"
+
+    for wb in water_bodies:
+        geom = wb.get("geometry")
+        if not geom:
+            continue
+        sigma = wb.get("anomaly_sigma", 0.0)
+        color = _bloom_color(sigma)
+        if geom["type"] == "Polygon":
+            for ring in geom["coordinates"]:
+                xs = [c[0] for c in ring]
+                ys = [c[1] for c in ring]
+                ax.fill(xs, ys, color=color, alpha=0.5, label=wb.get("name", wb["target_id"]))
+                ax.plot(xs, ys, color=color, linewidth=1.5)
+
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_title("Water Quality — Bloom Risk Overview")
+    if water_bodies:
+        ax.legend(loc="best", fontsize="small")
+
+    fig.tight_layout()
+    fig.savefig(path)
+    return path
+
+
+def export_wq_summary(
+    water_bodies: list[dict[str, Any]],
+    path: Path,
+) -> Path:
+    """Write a JSON summary of water bodies ranked by bloom-risk score.
+
+    Risk score = max(|anomaly_sigma| / 5.0, forecast_value / 50.0) in [0, 1].
+    """
+    ranked = sorted(
+        water_bodies,
+        key=lambda wb: max(
+            abs(wb.get("anomaly_sigma", 0.0)) / 5.0,
+            wb.get("forecast_value", 0.0) / 50.0,
+        ),
+        reverse=True,
+    )
+    summary: dict[str, Any] = {
+        "exported_at": datetime.now(UTC).isoformat(),
+        "water_bodies": [
+            {
+                "rank": i + 1,
+                "target_id": wb["target_id"],
+                "name": wb.get("name", wb["target_id"]),
+                "anomaly_sigma": wb.get("anomaly_sigma", 0.0),
+                "forecast_value": wb.get("forecast_value", 0.0),
+                "intakes_threatened": wb.get("intakes_threatened", 0),
+                "recreation_sites_threatened": wb.get("recreation_sites_threatened", 0),
+            }
+            for i, wb in enumerate(ranked)
+        ],
+    }
+    path.write_text(json.dumps(summary, indent=2))
+    return path
+
+
+def export_wq_products(
+    water_bodies: list[dict[str, Any]],
+    output_dir: Path,
+) -> dict[str, Path]:
+    """Export GeoJSON + PNG + JSON summary for the WQ domain analysis.
+
+    *water_bodies*: list of dicts with target_id, name, geometry, anomaly_sigma,
+    forecast_value, intakes_threatened, recreation_sites_threatened.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+    return {
+        "geojson": export_wq_geojson(water_bodies, output_dir / f"wq_flagged_{ts}.geojson"),
+        "png":     export_wq_png(water_bodies, output_dir / f"wq_risk_{ts}.png"),
+        "summary": export_wq_summary(water_bodies, output_dir / f"wq_summary_{ts}.json"),
+    }
+
+
 def _obs_to_feature(obs: Observation) -> dict[str, Any]:
     return {
         "type": "Feature",

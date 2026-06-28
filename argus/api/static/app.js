@@ -12,9 +12,10 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
 }).addTo(map);
 
 // Layer groups
-const obsLayer       = L.layerGroup().addTo(map);
+const obsLayer        = L.layerGroup().addTo(map);
 const trajectoryLayer = L.layerGroup().addTo(map);
-const impactLayer    = L.layerGroup().addTo(map);
+const impactLayer     = L.layerGroup().addTo(map);
+const wqLayer         = L.layerGroup().addTo(map);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -142,6 +143,112 @@ async function loadImpact(aoiId) {
   }
 }
 
+// ── Water Quality (D2) ───────────────────────────────────────────────────────
+
+function wqRiskColor(anomalyItems) {
+  // Returns a colour based on the highest z_score across anomaly predictions.
+  const sigmas = anomalyItems.map(p => Math.abs((p.uncertainty && p.uncertainty.sigma) || 0));
+  const max = sigmas.length ? Math.max(...sigmas) : 0;
+  if (max >= 3.0) return "#ef4444";   // high risk: red
+  if (max >= 2.0) return "#f97316";   // medium risk: orange
+  return "#22c55e";                   // low / normal: green
+}
+
+async function loadWQReport(targetId) {
+  try {
+    const res = await fetch(`/waterbody/${targetId}/report`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const panel = document.getElementById("report-panel");
+    const textEl = document.getElementById("report-text");
+    if (panel && textEl) {
+      panel.style.display = "";
+      textEl.textContent = data.text || "No report available.";
+    }
+  } catch (err) {
+    console.error("WQ report error:", err);
+  }
+}
+
+async function loadWQTarget(targetId) {
+  try {
+    const [obsRes, anomRes] = await Promise.all([
+      fetch(`/waterbody/${targetId}/observations?obs_type=chlorophyll_a`),
+      fetch(`/waterbody/${targetId}/anomalies`),
+    ]);
+
+    const obsData  = obsRes.ok  ? await obsRes.json()  : { items: [] };
+    const anomData = anomRes.ok ? await anomRes.json() : { items: [] };
+
+    const color = wqRiskColor(anomData.items);
+
+    // Draw water body polygon if any observation has a polygon geometry
+    wqLayer.clearLayers();
+    for (const obs of obsData.items) {
+      if (obs.geometry && obs.geometry.type === "Polygon") {
+        L.geoJSON(obs.geometry, {
+          style: { color, weight: 2, opacity: 0.9, fillColor: color, fillOpacity: 0.2 },
+        })
+          .bindPopup(`<b>Water body: ${targetId}</b><br>Type: ${obs.obs_type}`)
+          .addTo(wqLayer);
+      }
+    }
+
+    // Build trend list (latest 10 obs, newest first)
+    const recent = obsData.items.slice(0, 10);
+    const wqList = document.getElementById("wq-list");
+    if (!wqList) return;
+
+    const statusDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>`;
+    const riskLabel = color === "#ef4444" ? "HIGH RISK" : color === "#f97316" ? "ELEVATED" : "Normal";
+
+    let html = `<div class="stat-row" style="margin-bottom:4px">
+      <span>${statusDot}${targetId}</span>
+      <span class="stat-value" style="color:${color}">${riskLabel}</span>
+    </div>`;
+
+    if (recent.length) {
+      html += `<div style="font-size:0.72rem;color:#64748b;margin:6px 0 2px">Recent chl-a (µg/L)</div>`;
+      html += `<table style="width:100%;font-size:0.72rem;border-collapse:collapse">`;
+      for (const obs of recent) {
+        const val = obs.value != null ? Number(obs.value).toFixed(1) : "—";
+        const dt  = obs.created_at ? obs.created_at.slice(0, 10) : "—";
+        html += `<tr><td style="color:#94a3b8">${dt}</td><td style="text-align:right">${val}</td></tr>`;
+      }
+      html += "</table>";
+    } else {
+      html += `<div style="color:#475569;font-size:0.78rem">No observations.</div>`;
+    }
+
+    if (anomData.count > 0) {
+      html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px">Anomaly flags: ${anomData.count}</div>`;
+    }
+
+    wqList.innerHTML = html;
+
+    const panel = document.getElementById("wq-panel");
+    if (panel) panel.style.display = "";
+
+    // Load AI report after populating the WQ panel
+    await loadWQReport(targetId);
+  } catch (err) {
+    console.error("WQ target error:", err);
+  }
+}
+
+async function loadWaterbodies() {
+  try {
+    const res = await fetch("/waterbodies");
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const targetId of data.target_ids) {
+      await loadWQTarget(targetId);
+    }
+  } catch (err) {
+    console.error("waterbodies error:", err);
+  }
+}
+
 // ── AOI discovery + bootstrap ─────────────────────────────────────────────────
 
 async function bootstrap() {
@@ -162,6 +269,7 @@ async function bootstrap() {
       loadObservations(aoi.id),
       loadPredictions(aoi.id),
       loadImpact(aoi.id),
+      loadWaterbodies(),
     ]);
 
     updateStatus(`${aoi.name} — ready`);

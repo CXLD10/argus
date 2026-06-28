@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import pytest
 
 from argus.ai.base import GroundedText, Scope
-from argus.ai.client import ArgusAIClient, _PINNED_MODEL
+from argus.ai.client import _PINNED_MODEL, ArgusAIClient
 from argus.ai.fallback import generate_template_report, is_offline
 from argus.ai.grounding import GroundingGuard, _is_factual, _split_sentences
 from argus.core.errors import GroundingError
