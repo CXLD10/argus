@@ -1,4 +1,4 @@
-"""Scene acquisition: quota enforcement, Process API fetch, and persistence."""
+"""Scene acquisition: quota enforcement, idempotency check, Process API fetch, persistence."""
 
 from __future__ import annotations
 
@@ -27,9 +27,19 @@ def acquire_scene(
 ) -> Scene:
     """Download a σ⁰ GeoTIFF for *ref*, enforce the daily CDSE quota, persist the Scene.
 
+    Idempotency (F-038): if a Scene with the same product_id already exists with
+    ingest_status="ready", the existing Scene is returned without re-downloading.
+    This ensures repeated runs over the same date window never double-fetch.
+
     Raises QuotaExceededError if the daily quota is already exhausted before downloading,
     or AcquisitionError if the downloaded byte count would push usage over the limit.
     """
+    # ── Idempotency check ─────────────────────────────────────────────────────
+    existing = store.get_scene_by_product_id(ref.product_id)
+    if existing is not None and existing.ingest_status == "ready":
+        return existing
+
+    # ── Quota guard ───────────────────────────────────────────────────────────
     daily_limit = int(settings.cdse.daily_quota_gb * _BYTES_PER_GB)
     today = datetime.now(UTC)
     used = store.daily_bytes_total(today)

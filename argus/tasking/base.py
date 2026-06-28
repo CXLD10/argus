@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 
 @dataclass
@@ -34,13 +34,20 @@ class TaskResult:
     aoi_id: str
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
-    status: str = "running"  # running | complete | failed | skipped
+    status: Literal["running", "complete", "failed", "skipped"] = "running"
     scenes_fetched: int = 0
     observations_created: int = 0
     bytes_used: int = 0
     error: str | None = None
 
-    def finish(self, *, status: str, scenes: int = 0, obs: int = 0, bytes_used: int = 0) -> None:
+    def finish(
+        self,
+        *,
+        status: Literal["complete", "failed", "skipped"],
+        scenes: int = 0,
+        obs: int = 0,
+        bytes_used: int = 0,
+    ) -> None:
         self.completed_at = datetime.now(UTC)
         self.status = status
         self.scenes_fetched = scenes

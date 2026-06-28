@@ -20,7 +20,7 @@ from typing import Any
 
 from argus.aoi.loader import load_aoi
 from argus.core.config import Settings
-from argus.core.models import AnalysisRun, MonitorTarget
+from argus.core.models import AnalysisRun, MonitorTarget, RunHistory
 from argus.core.store import Store
 from argus.tasking.base import ScheduledJob, TaskResult
 from argus.tasking.quota_guard import check_domain_quota
@@ -63,6 +63,10 @@ def run_domain_task(
     cfg_dir = config_dir or Path("config")
     result = TaskResult(job_id=job.job_id, domain_id=job.domain_id, aoi_id=job.aoi_id)
 
+    # Search window — set early so RunHistory can record it on all code paths.
+    t1 = datetime.now(UTC)
+    t0 = t1 - timedelta(hours=job.cadence_hours or _DEFAULT_LOOKBACK_HOURS)
+
     # ── 1. Quota check ────────────────────────────────────────────────────────
     decision = check_domain_quota(
         job.domain_id,
@@ -74,6 +78,7 @@ def run_domain_task(
         logger.warning("Job %s skipped: %s", job.job_id, decision.reason)
         result.finish(status="skipped")
         result.error = decision.reason
+        _save_run_history(result, store, t0, t1)
         return result
 
     # ── 2. Load AOI ───────────────────────────────────────────────────────────
@@ -83,6 +88,7 @@ def run_domain_task(
     except Exception as exc:
         logger.error("Job %s: cannot load AOI %r — %s", job.job_id, job.aoi_id, exc)
         result.fail(f"AOI load error: {exc}")
+        _save_run_history(result, store, t0, t1)
         return result
 
     # ── 3. Resolve MonitorTarget ──────────────────────────────────────────────
@@ -91,6 +97,7 @@ def run_domain_task(
     except Exception as exc:
         logger.error("Job %s: cannot resolve MonitorTarget — %s", job.job_id, exc)
         result.fail(f"MonitorTarget error: {exc}")
+        _save_run_history(result, store, t0, t1)
         return result
 
     # ── 4. Import domain ──────────────────────────────────────────────────────
@@ -99,22 +106,23 @@ def run_domain_task(
     except Exception as exc:
         logger.error("Job %s: cannot instantiate domain %r — %s", job.job_id, job.domain_id, exc)
         result.fail(f"Domain load error: {exc}")
+        _save_run_history(result, store, t0, t1)
         return result
 
     # ── 5. Search / acquire / analyze ─────────────────────────────────────────
-    t1 = datetime.now(UTC)
-    t0 = t1 - timedelta(hours=job.cadence_hours or _DEFAULT_LOOKBACK_HOURS)
 
     try:
         refs = domain.search(target, t0, t1)
     except Exception as exc:
         logger.error("Job %s: domain.search() failed — %s", job.job_id, exc)
         result.fail(f"search() error: {exc}")
+        _save_run_history(result, store, t0, t1)
         return result
 
     if not refs:
         logger.info("Job %s: no new scenes found in window %s–%s", job.job_id, t0.date(), t1.date())
         result.finish(status="complete", scenes=0, obs=0)
+        _save_run_history(result, store, t0, t1)
         return result
 
     total_obs = 0
@@ -164,7 +172,37 @@ def run_domain_task(
         len(refs),
         total_obs,
     )
+
+    _save_run_history(result, store, t0, t1)
     return result
+
+
+def _save_run_history(result: TaskResult, store: Store, t0: datetime, t1: datetime) -> None:
+    """Persist a RunHistory record for the completed task."""
+    # Map TaskResult status to RunHistory status. "running" means interrupted → "partial".
+    status_map = {
+        "complete": "complete",
+        "failed": "failed",
+        "skipped": "skipped",
+        "running": "partial",
+    }
+    rh_status = status_map.get(result.status, "failed")
+    run = RunHistory(
+        id=str(uuid.uuid4()),
+        domain_id=result.domain_id,
+        aoi_id=result.aoi_id,
+        t_start=t0,
+        t_end=t1,
+        scenes_fetched=result.scenes_fetched,
+        observations_created=result.observations_created,
+        bytes_used=result.bytes_used,
+        status=rh_status,  # type: ignore[arg-type]  # validated by status_map keys
+        error=result.error,
+    )
+    try:
+        store.save_run_history(run)
+    except Exception:
+        logger.exception("Failed to persist RunHistory for job %s", result.job_id)
 
 
 # ── Private helpers ────────────────────────────────────────────────────────────

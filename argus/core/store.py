@@ -19,6 +19,7 @@ from argus.core.models import (
     ImpactAssessment,
     Observation,
     Prediction,
+    RunHistory,
     Scene,
 )
 
@@ -151,6 +152,21 @@ class Store:
                     created_at          TEXT NOT NULL
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS run_history (
+                    id                  TEXT PRIMARY KEY,
+                    domain_id           TEXT NOT NULL,
+                    aoi_id              TEXT NOT NULL,
+                    t_start             TEXT NOT NULL,
+                    t_end               TEXT NOT NULL,
+                    scenes_fetched      INTEGER NOT NULL DEFAULT 0,
+                    observations_created INTEGER NOT NULL DEFAULT 0,
+                    bytes_used          INTEGER NOT NULL DEFAULT 0,
+                    status              TEXT NOT NULL DEFAULT 'complete',
+                    error               TEXT,
+                    created_at          TEXT NOT NULL
+                )
+            """)
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._db_path)
@@ -190,7 +206,18 @@ class Store:
             return None
         return _row_to_scene(row)
 
-    # ── Quota helpers ─────────────────────────────────────────────────────────
+    def get_scene_by_product_id(self, product_id: str) -> Scene | None:
+        """Return the most recent Scene for a given product_id, or None.
+
+        Used by acquire_scene() to skip re-downloading already-acquired products
+        (idempotency rule from F-038).
+        """
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM scenes WHERE product_id = ? ORDER BY created_at DESC LIMIT 1",
+                (product_id,),
+            ).fetchone()
+        return _row_to_scene(row) if row else None
 
     # ── AnalysisRun CRUD ──────────────────────────────────────────────────────
 
@@ -510,6 +537,70 @@ class Store:
             ).fetchall()
         return [_row_to_impact_assessment(r) for r in rows]
 
+    # ── RunHistory CRUD (F-038) ───────────────────────────────────────────────
+
+    def save_run_history(self, run: RunHistory) -> None:
+        """Persist a RunHistory record (idempotent — INSERT OR REPLACE)."""
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO run_history
+                    (id, domain_id, aoi_id, t_start, t_end,
+                     scenes_fetched, observations_created, bytes_used,
+                     status, error, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run.id,
+                    run.domain_id,
+                    run.aoi_id,
+                    run.t_start.isoformat(),
+                    run.t_end.isoformat(),
+                    run.scenes_fetched,
+                    run.observations_created,
+                    run.bytes_used,
+                    run.status,
+                    run.error,
+                    run.created_at.isoformat(),
+                ),
+            )
+
+    def get_run_history(
+        self,
+        domain_id: str | None = None,
+        aoi_id: str | None = None,
+        *,
+        limit: int = 100,
+    ) -> list[RunHistory]:
+        """Return run history records, newest first. Optionally filter by domain and/or AOI."""
+        query = "SELECT * FROM run_history"
+        params: list[object] = []
+        clauses: list[str] = []
+        if domain_id:
+            clauses.append("domain_id = ?")
+            params.append(domain_id)
+        if aoi_id:
+            clauses.append("aoi_id = ?")
+            params.append(aoi_id)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        query += " ORDER BY created_at DESC"
+        if limit:
+            query += f" LIMIT {int(limit)}"
+        with self._connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [_row_to_run_history(r) for r in rows]
+
+    def get_last_run_for_domain(self, domain_id: str, aoi_id: str) -> RunHistory | None:
+        """Return the most recent successful RunHistory for a domain×AOI pair."""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM run_history WHERE domain_id = ? AND aoi_id = ? "
+                "AND status = 'complete' ORDER BY created_at DESC LIMIT 1",
+                (domain_id, aoi_id),
+            ).fetchone()
+        return _row_to_run_history(row) if row else None
+
     # ── Quota helpers ─────────────────────────────────────────────────────────
 
     def daily_bytes_total(self, on: datetime) -> int:
@@ -639,5 +730,21 @@ def _row_to_impact_assessment(row: sqlite3.Row) -> ImpactAssessment:
         valid_at=datetime.fromisoformat(row["valid_at"]),
         eta_hours=row["eta_hours"],
         metrics=json.loads(row["metrics"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _row_to_run_history(row: sqlite3.Row) -> RunHistory:
+    return RunHistory(
+        id=row["id"],
+        domain_id=row["domain_id"],
+        aoi_id=row["aoi_id"],
+        t_start=datetime.fromisoformat(row["t_start"]),
+        t_end=datetime.fromisoformat(row["t_end"]),
+        scenes_fetched=row["scenes_fetched"],
+        observations_created=row["observations_created"],
+        bytes_used=row["bytes_used"],
+        status=row["status"],
+        error=row["error"],
         created_at=datetime.fromisoformat(row["created_at"]),
     )

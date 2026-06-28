@@ -194,6 +194,26 @@ class ImpactAssessment(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class RunHistory(BaseModel):
+    """Persistent record of one completed (or partial) scheduler task run.
+
+    Created by run_domain_task() after each execution cycle. Enables incremental
+    ingestion (skip already-fetched scenes) and operator observability (F-039).
+    """
+
+    id: str
+    domain_id: str
+    aoi_id: str
+    t_start: datetime  # search window start
+    t_end: datetime  # search window end
+    scenes_fetched: int = 0
+    observations_created: int = 0
+    bytes_used: int = 0
+    status: Literal["complete", "failed", "partial", "skipped"] = "complete"
+    error: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 def _extract_coords(geometry: dict[str, Any]) -> list[tuple[float, float]]:
     """Flatten all coordinate pairs from a GeoJSON geometry."""
     gtype = geometry.get("type", "")

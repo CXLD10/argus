@@ -4,6 +4,49 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-28 — Session 9 — F-037: Per-Domain Tasking + APScheduler Scheduler
+
+**Agent:** Claude claude-sonnet-4-6
+**Duration:** Single continuous session
+**Tasks:** F-037 complete — Phase 8 started
+
+### What happened
+
+**F-037 — Per-Domain Tasking + Scheduler (ADR-0007 Option B)**
+- `argus/tasking/base.py` — `ScheduledJob` and `TaskResult` dataclasses; `Scheduler` Protocol
+  (backend-agnostic: start/stop/schedule/unschedule/list_jobs/trigger). Protocol design from ADR-0007.
+- `argus/tasking/apscheduler_backend.py` — `APSchedulerBackend`: wraps APScheduler 3.x
+  `BackgroundScheduler`. Uses `RLock` to prevent deadlock when `schedule()` re-enters `unschedule()`.
+  `trigger()` fires callback in a daemon thread so HTTP responses return immediately. Lazy job
+  wrapping ensures each run gets the current callback (supports re-scheduling).
+- `argus/tasking/quota_guard.py` — Stateless quota check functions; `check_domain_quota()` routes
+  by domain_id to CDSE (satellite domains) or Open-Meteo (weather domains). Store is
+  dependency-injected; guards read `daily_bytes_total()` for both byte and call counting.
+- `argus/tasking/runner.py` — Stateless `run_domain_task()`: quota → AOI load → MonitorTarget
+  resolve → lazy domain import → search/acquire/analyze → persist AnalysisRun+Observations →
+  TaskResult. `dry_run` flag skips acquisition for quota testing. Handles partial acquire
+  failures gracefully (logs, continues to next ref). Invocable by scheduler, CLI, or Cloud Run
+  HTTP endpoint without changing business logic (ADR-0007 requirement).
+- `config/schedule.yaml` — Schedule configuration template (two example jobs, both disabled).
+- `tests/test_scheduler.py` — 34 tests; all offline. Covers: dataclasses, protocol conformance,
+  start/stop/schedule/unschedule/list/trigger, deadlock regression, quota guards, runner
+  happy path and error paths.
+
+**Bugfixes:**
+- APScheduler RLock deadlock: `schedule()` held `threading.Lock` then called `unschedule()` which
+  tried to acquire same lock → switched to `threading.RLock` and extracted `_unschedule_locked()`.
+
+**Test count:** 791 → 825 (+34). ruff clean. mypy clean.
+
+**Commit:** 70fa768
+
+### State
+- F-037: DONE. All ACs met. Tests green.
+- F-038 (Incremental Ingestion + Idempotency + Run History): next.
+- No open blockers.
+
+---
+
 ## 2026-06-28 — Session 8 — F-034–F-036: Platform Integration (D2) — PHASE 7 COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6

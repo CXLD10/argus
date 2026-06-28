@@ -122,7 +122,7 @@ Note: requires ADR-0007 (scheduler) before F-037 starts.
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-037 | Per-domain tasking + scheduler (quota-aware) | DONE | — | commit TBD |
+| F-037 | Per-domain tasking + scheduler (quota-aware) | DONE | — | commit 70fa768 |
 | F-038 | Incremental ingestion + idempotency + run history | TODO | — | dep F-037 |
 | F-039 | Observability (metrics + run dashboard) | TODO | — | dep F-038 |
 
@@ -197,7 +197,7 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
   extracting `_unschedule_locked()` helper.
 - State: All F-037 ACs met. 825/825 offline tests pass. ruff clean. mypy clean.
   Scheduler protocol is backend-agnostic (Cloud Run can invoke same run_domain_task via HTTP).
-- Git: main · TBD
+- Git: main · 70fa768
 - Quota: Zero.
 - Next: F-038 — Incremental ingestion + idempotency + run history.
 - Blockers: None.
