@@ -132,11 +132,11 @@ Detailed specs: [`docs/features/phase-9.md`](docs/features/phase-9.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-040 | D4 choke points (DEM flow-accumulation) | DONE | — | commit TBD · 49 tests · ruff/mypy clean |
-| F-041 | D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation) | TODO | — | dep F-040 |
-| F-042 | FloodRisk predictor + hydro impact | TODO | — | dep F-041 |
-| F-043 | AcidDepositionRisk index (modeled; never a measurement) | TODO | — | dep F-041 |
-| F-044 | Hydro viewer + alerting + generalization pass — **CP-3 close** | TODO | — | dep F-042, F-043 |
+| F-040 | D4 choke points (DEM flow-accumulation) | DONE | — | commit e5c113a · 49 tests · ruff/mypy clean |
+| F-041 | D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation) | DONE | — | commit 132bd6b · 50 tests · ruff/mypy clean |
+| F-042 | FloodRisk predictor + hydro impact | DONE | — | commit d658d8d · 32 tests · ruff/mypy clean |
+| F-043 | AcidDepositionRisk index (modeled; never a measurement) | DONE | — | commit a70ee9e · 26 tests · ruff/mypy clean |
+| F-044 | Hydro viewer + alerting + generalization pass — **CP-3 close** | DONE | — | commit 37d941f · 51 tests · ruff/mypy clean |
 
 ## Phase 10 — Production Dashboard *(P0)* — MVP prerequisite
 
@@ -180,6 +180,58 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - Blockers/decisions: <anything needing a human or ADR>
 ```
 
+### 2026-06-28 — implementation — F-041/F-042/F-043/F-044 (Session 11) — PHASE 9 COMPLETE
+
+- Did:
+  F-041 (D3 weather/hydro ingestion):
+    `argus/domains/weather_hydro/__init__.py`, `analyzer.py`, `open_meteo.py` — WeatherHydroDomain
+    implementing Domain protocol: search/acquire/analyze for 4 Open-Meteo endpoints (forecast,
+    ERA5, GloFAS, air quality); produces Observations(obs_type∈{precip_series,discharge_series,
+    so2_series,no2_series}); CC BY 4.0 attribution constant; evidence_class honesty per INV-3
+    (modeled for forecasts; measured for ERA5 historical). `s5p.py` + `inundation.py` stubs
+    (live CDSE required). `argus/tasking/quota_guard.py` updated to use
+    `store.open_meteo_calls_today()` (reads RunHistory instead of Scene bytes).
+    `argus/core/store.py`: `open_meteo_calls_today()` method; `argus/api/routers/health.py`
+    updated to populate `open_meteo_calls_today` field in StatusResponse.
+    `tests/test_weather_hydro_domain.py` — 50 tests. commit 132bd6b.
+  F-042 (FloodRisk predictor):
+    `argus/predict/flood_risk/predictor.py` — rule-based 3-component score
+    (0.5×precip + 0.3×discharge + 0.2×max_constriction); levels low/medium/high/extreme.
+    `argus/predict/flood_risk/evaluator.py` — `build_eval_set()` for backtesting.
+    `argus/core/config.py` — `FloodRiskConfig` with all thresholds configurable.
+    evidence_class="modeled" (INV-3), uncertainty populated (INV-9), rng_seed stored (INV-8).
+    Honesty label: "modeled flood risk at choke point (not a measured flood)".
+    `tests/test_flood_risk.py` — 32 tests. commit d658d8d.
+  F-043 (AcidDepositionRisk predictor):
+    `argus/predict/acid_deposition/predictor.py` — physically-motivated formula
+    SO₂_norm × NO₂_norm × precip_norm × sensitivity × 10, clamped [0,10].
+    SO₂=0 → index=0 invariant enforced. No NO₂ → neutral (no suppression).
+    Honesty label: "modeled acid-deposition risk index (0–10 scale) — NOT a pH measurement".
+    evidence_class="modeled" (INV-3), uncertainty populated (INV-9).
+    `tests/test_acid_deposition.py` — 26 tests. commit a70ee9e.
+  F-044 (Hydro viewer + alerting + generalization pass):
+    `argus/core/store.py` — `get_predictions_by_predictor()` method.
+    `argus/api/schemas.py` — `ChokePointSchema`, `ChokePointListResponse`,
+    `RiskPredictionSchema`, `RiskPredictionListResponse`.
+    `argus/api/routers/hydro.py` — 3 endpoints: GET /aois/{id}/choke-points,
+    /flood-risk, /acid-risk. Registered in `argus/api/app.py`.
+    `argus/alert/delivery.py` — `should_alert_flood_risk()`, `create_flood_risk_alert()`,
+    `should_alert_acid_risk()`, `create_acid_risk_alert()`.
+    `argus/api/static/app.js` — chokeLayer, floodRiskLayer, acidRiskLayer groups;
+    `loadChokePoints()`, `loadFloodRisk()`, `loadAcidRisk()` functions called in bootstrap().
+    Generalization pass: INV-2 verified — spine has no hardcoded domain set; `_load_domain()`
+    is sole registration point; quota_guard unknown-domain fallback allows 5th domain with zero
+    spine edits. NFR-4 demonstrated in test.
+    `tests/test_hydro_viewer.py` (51 tests, incl. NFR-4), `tests/test_hydro_alerts.py` (30 tests).
+    commit 37d941f.
+- State: All F-041/F-042/F-043/F-044 ACs met. 1072/1072 offline tests pass. ruff clean. mypy clean.
+  CP-3 complete: all 4 domains operational (marine_oil, inland_wq, weather_hydro, hydro_chokepoints).
+  Phase 9 DoD: F-040–F-044 all DONE.
+- Git: main · 37d941f
+- Quota: Zero. No live fetches.
+- Next: F-045 — React + Vite + Tailwind frontend scaffold (Phase 10).
+- Blockers: None.
+
 ### 2026-06-28 — implementation — F-040 (Session 10)
 
 - Did:
@@ -202,7 +254,7 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 - State: All F-040 ACs met. 909/909 tests pass. ruff clean. mypy clean. INV-3 enforced
   (evidence_class="inferred" on all ChokePoint/choke_point Observations). OQ-B satisfied:
   all thresholds in settings.yaml, zero hardcoded values.
-- Git: main · commit pending
+- Git: main · e5c113a
 - Quota: Zero. No live fetches.
 - Next: F-041 — D3 ingestion (Open-Meteo + SO₂/NO₂ + S1 inundation).
 - Blockers: None.

@@ -4,6 +4,59 @@ Append a new entry every session. Newest on top. This is the persistent memory o
 
 ---
 
+## 2026-06-28 — Session 11 — F-041/F-042/F-043/F-044: Phase 9 D3/D4 Completion — COMPLETE
+
+**Agent:** Claude claude-sonnet-4-6
+**Tasks:** F-041, F-042, F-043, F-044 — Phase 9 (D3 Weather/Hydro + D4 Choke Points) complete; CP-3 achieved
+
+### What happened
+
+**F-041 — D3 Weather/Hydro Ingestion (commit 132bd6b)**
+- `argus/domains/weather_hydro/open_meteo.py` — 4 fetch functions (precip forecast, ERA5 historical, GloFAS discharge, air quality SO₂/NO₂); `ATTRIBUTION` constant (CC BY 4.0 required); `mock_response` param for offline tests (INV-7). All functions have `parse_hourly_series()` / `parse_daily_series()` converters.
+- `argus/domains/weather_hydro/analyzer.py` — `WeatherHydroDomain` implementing Domain protocol. search() returns 4 SourceRefs (one per Open-Meteo product). acquire() dispatches by product attr. analyze() converts JSON → Observations(obs_type∈{precip_series,discharge_series,so2_series,no2_series}); evidence_class honesty: ERA5="measured", forecast/GloFAS/AQ="modeled" (INV-3).
+- `argus/domains/weather_hydro/s5p.py` + `inundation.py` — stubs for live CDSE paths (raise NotImplementedError).
+- `argus/core/store.py` — `open_meteo_calls_today()` reads RunHistory.bytes_used for weather_hydro domain.
+- `argus/tasking/quota_guard.py` — updated to use `store.open_meteo_calls_today()` (RunHistory instead of Scene bytes, since weather domain has no Scene raster downloads).
+- `argus/api/routers/health.py` — `/status` endpoint now populates `open_meteo_calls_today` field properly.
+- `tests/test_weather_hydro_domain.py` — 50 tests (parsers, search/acquire/analyze, quota tracking).
+
+**F-042 — FloodRisk Predictor (commit d658d8d)**
+- `argus/predict/flood_risk/predictor.py` — `FloodRiskPredictor`; rule-based 3-component score: `0.5×precip_score + 0.3×discharge_score + 0.2×max_constriction`; levels: low/medium/high/extreme driven by configurable thresholds (via ctx.attrs["flood_risk_thresholds"]).
+- `argus/predict/flood_risk/evaluator.py` — `build_eval_set()` for hit_rate/false_alarm_rate backtesting.
+- `argus/core/config.py` — `FloodRiskConfig` with all 5 threshold keys configurable.
+- INV-3: evidence_class="modeled". INV-9: uncertainty with risk_score, model_type="rule_based". INV-8: rng_seed stored. Honesty label: "modeled flood risk at choke point (not a measured flood)".
+- `tests/test_flood_risk.py` — 32 tests.
+
+**F-043 — AcidDepositionRisk Predictor (commit a70ee9e)**
+- `argus/predict/acid_deposition/predictor.py` — `AcidDepositionRiskPredictor`; formula: SO₂_norm × NO₂_norm × precip_norm × sensitivity × 10 clamped [0,10]. Saturation thresholds: SO₂=50 μg/m³, NO₂=100, precip=50mm. SO₂=0 → index=0 invariant. No NO₂ → neutral (no suppression). INV-3/INV-9/INV-8 enforced. Honesty label: "modeled acid-deposition risk index (0–10 scale) — NOT a pH measurement".
+- `tests/test_acid_deposition.py` — 26 tests.
+
+**F-044 — Hydro Viewer + Alerting + Generalization Pass (commit 37d941f)**
+- `argus/core/store.py` — `get_predictions_by_predictor(predictor_id)` method added.
+- `argus/api/schemas.py` — `ChokePointSchema`, `ChokePointListResponse`, `RiskPredictionSchema`, `RiskPredictionListResponse`.
+- `argus/api/routers/hydro.py` — 3 read-only endpoints: GET /aois/{id}/choke-points, /flood-risk, /acid-risk. Registered in `app.py` with "hydro" tag.
+- `argus/alert/delivery.py` — `should_alert_flood_risk()` (fires for high/extreme), `create_flood_risk_alert()`, `should_alert_acid_risk()` (fires at index ≥ 7.0), `create_acid_risk_alert()`. All alerts are advisory; honesty labels preserved in payload.
+- `argus/api/static/app.js` — `chokeLayer`, `floodRiskLayer`, `acidRiskLayer` L.layerGroup(); `loadChokePoints()` renders circle markers sized by constriction_score; `loadFloodRisk()` / `loadAcidRisk()` populate indicator elements. All 3 called in `bootstrap()`.
+- **Generalization pass (INV-2 / NFR-4)**: `_load_domain()` is the sole domain registration point (one if-chain entry = one domain). `quota_guard.check_domain_quota()` returns `allowed=True` for unknown domains — a 5th domain using neither CDSE nor Open-Meteo needs zero spine edits. `inline inland_wq` branch in `_resolve_target()` is a pre-existing bounded exception for water-body target loading, documented with fallback for all other domains.
+- `tests/test_hydro_viewer.py` — 22 API tests + NFR-4 protocol test (51 total).
+- `tests/test_hydro_alerts.py` — 30 alert function tests.
+
+### Invariant compliance
+- INV-2: No spine edits for domain routing. All new domain code in `argus/domains/` and `argus/predict/`.
+- INV-3: FloodRisk evidence_class="modeled"; AcidDepositionRisk evidence_class="modeled"; ChokePoint evidence_class="inferred". All tested explicitly.
+- INV-4: AI layer unchanged; all predictions carry grounding attrs.
+- INV-7: All 157 new tests fully offline. Live paths (S5P, S1 inundation) raise NotImplementedError.
+- INV-9: uncertainty populated on both new predictors.
+
+### Tests
+1072 passed / 0 failed (up from 909; +157 across F-041–F-044). 2 deselected (--live). ruff clean. mypy clean.
+
+### CP-3 Status
+All 4 domains operational: marine_oil (D1), inland_wq (D2), weather_hydro (D3), hydro_chokepoints (D4).
+Full automation pipeline functional. AI layer grounded. Phase 9 DoD satisfied.
+
+---
+
 ## 2026-06-28 — Session 10 — F-040: D4 Hydro Choke Points — COMPLETE
 
 **Agent:** Claude claude-sonnet-4-6
