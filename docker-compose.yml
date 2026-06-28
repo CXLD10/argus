@@ -1,0 +1,46 @@
+# Argus Docker Compose — local development stack
+#
+# Usage:
+#   docker compose up           # start API + frontend
+#   docker compose up api       # start API only
+#   docker compose down         # stop all services
+#
+# Environment:
+#   Copy .env.example to .env and fill in credentials before starting.
+#   The .env file is loaded automatically by Docker Compose.
+#
+# Ports:
+#   API:      http://localhost:8000
+#   Frontend: http://localhost:5173 (dev) or served by API at http://localhost:8000
+#
+# Note: the frontend build is not included in this compose file by default.
+# Run `cd frontend && pnpm build` once before starting to serve the built frontend
+# from the API's static directory. For active frontend development, run
+# `cd frontend && pnpm dev` in a separate terminal instead.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - ARGUS_AI_OFFLINE=${ARGUS_AI_OFFLINE:-true}
+      - ARGUS_CDSE_USER=${ARGUS_CDSE_USER:-}
+      - ARGUS_CDSE_PASSWORD=${ARGUS_CDSE_PASSWORD:-}
+      - ARGUS_CMEMS_USER=${ARGUS_CMEMS_USER:-}
+      - ARGUS_CMEMS_PASSWORD=${ARGUS_CMEMS_PASSWORD:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ARGUS_LOGGING_FORMAT=json
+    command: argus serve --host 0.0.0.0 --port 8000 --db-path /app/data/argus.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

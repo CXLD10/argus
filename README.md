@@ -226,18 +226,19 @@ uv venv
 source .venv/bin/activate
 uv pip install -e ".[dev]"
 
-# 3. Copy and fill in your settings
-cp config/settings.yaml config/settings.local.yaml
-# Edit settings.local.yaml with CDSE credentials etc.
-# Never commit settings.local.yaml
+# 3. Configure credentials (optional — not needed for tests or demo)
+cp .env.example .env
+# Edit .env: set ARGUS_CDSE_USER/PASSWORD for satellite downloads,
+#            set ANTHROPIC_API_KEY for live AI reports,
+#            set ARGUS_AI_OFFLINE=true to use templated fallback (recommended for local dev)
 
 # 4. Run the test suite (fully offline; no credentials needed)
 pytest tests/
 
 # 5. Start the API server
-argus serve                    # http://localhost:8000
-argus serve --port 8001        # custom port
-argus serve --db-path prod.db  # custom database
+argus serve                          # http://localhost:8000 (db: data/argus.db)
+argus serve --port 8001              # custom port
+argus serve --db-path /data/prod.db  # custom database path
 ```
 
 ### Frontend
@@ -252,11 +253,21 @@ pnpm build    # production bundle → frontend/dist/
 ### CLI
 
 ```bash
-argus version                                        # print version
-argus run --aoi tobago --since 2024-02-01            # offline synthetic run
-argus run --aoi tobago --since 2024-02-01 --live     # live CDSE data (requires credentials)
-argus serve                                          # start FastAPI server
+argus version                                              # print version
+argus run --aoi tobago --since 2024-02-01                 # offline synthetic run
+argus run --aoi gulf-paria-tt --since 2024-02-01          # Gulf of Paria demo AOI
+argus run --aoi tobago --since 2024-02-01 --live          # live CDSE data (requires credentials)
+argus serve                                                # start FastAPI server
 ```
+
+### Docker (optional)
+
+```bash
+cp .env.example .env   # fill in credentials
+docker compose up      # API at http://localhost:8000
+```
+
+See `Dockerfile` and `docker-compose.yml` for the full container setup.
 
 ---
 

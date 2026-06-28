@@ -114,7 +114,7 @@ def serve(
     host: Annotated[str, typer.Option("--host", help="Bind host")] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port", help="Bind port")] = 8000,
     db_path: Annotated[Path, typer.Option("--db-path", help="SQLite database path")] = Path(
-        "argus.db"
+        "data/argus.db"
     ),
     config_dir: Annotated[
         Path, typer.Option("--config-dir", hidden=True, help="Config root")

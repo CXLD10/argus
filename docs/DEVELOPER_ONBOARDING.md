@@ -77,21 +77,25 @@ cd ..
 
 ### 3.3 Environment variables
 
-Create a `.env` file in the project root (never committed — it's in `.gitignore`):
+Copy `.env.example` to `.env` and fill in credentials (never committed — it's in `.gitignore`):
 
 ```bash
-# Required for live CDSE satellite data access (not needed for tests or demo)
-CDSE_USER=your_email@example.com
-CDSE_PASSWORD=your_password
+cp .env.example .env
+# Edit .env with your values
+```
 
-# Required for live AI responses (not needed for tests or demo)
-ARGUS_AI_KEY=sk-ant-...
+Key variables:
 
-# Set to "true" to skip LLM calls in development
+```bash
+# CDSE satellite imagery (not needed for offline tests or demo mode)
+ARGUS_CDSE_USER=your_email@example.com
+ARGUS_CDSE_PASSWORD=your_password
+
+# Anthropic API (not needed for tests; ARGUS_AI_OFFLINE=true bypasses it)
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Set to "true" to skip LLM calls — recommended for local development
 ARGUS_AI_OFFLINE=true
-
-# Optional: override default database path
-ARGUS_DB_PATH=./argus.db
 ```
 
 For local development, `ARGUS_AI_OFFLINE=true` is recommended unless you're specifically
@@ -282,21 +286,24 @@ pytest tests/ --cov=argus --cov-report=term-missing
 ## 8. Running Domain Analysis
 
 ```bash
-# Run all domains for a configured AOI
+# Run the offline spike (synthetic SAR data, no credentials needed)
+argus run --aoi tobago --since 2026-06-01
+
+# Run against the Gulf of Paria demo AOI (offline mode)
 argus run --aoi gulf-paria-tt --since 2026-06-01
 
-# Run a specific domain only
-argus run --aoi gulf-paria-tt --domain marine_oil --since 2026-06-01
+# Run with live CDSE imagery (requires CDSE credentials)
+argus run --aoi gulf-paria-tt --since 2026-06-01 --live
 
-# Dry run (don't download, just plan)
-argus run --aoi gulf-paria-tt --dry-run --since 2026-06-01
-
-# Use a non-default database
-argus run --aoi gulf-paria-tt --db-path /path/to/argus.db --since 2026-06-01
+# Write artifacts to a custom directory
+argus run --aoi gulf-paria-tt --since 2026-06-01 --output-dir /tmp/argus-run
 ```
 
-CDSE credentials must be in the environment for any domain that downloads imagery. Open-Meteo
-does not require credentials.
+Supported flags: `--aoi` (required), `--since` (required), `--live` (optional),
+`--output-dir` (optional, default: `.argus/`).
+
+CDSE credentials (`ARGUS_CDSE_USER`, `ARGUS_CDSE_PASSWORD`) are required when using `--live`.
+Open-Meteo does not require credentials.
 
 ---
 
