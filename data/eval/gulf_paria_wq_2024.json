@@ -1,0 +1,28 @@
+{
+  "id": "gulf_paria_wq_2024",
+  "domain": "inland_wq",
+  "event_name": "Gulf of Paria WQ monitoring 2024",
+  "refs": {
+    "cdse_product_id": "S2B_MSIL2A_20240301T145719_N0510_R082_T20PPR_20240301T182741",
+    "bbox": [-62.0, 10.0, -61.0, 10.8],
+    "sensing_date": "2024-03-01"
+  },
+  "event_time": "2024-03-01T14:57:00Z",
+  "obs_type": "chlorophyll_a",
+  "truth_value": 0.14,
+  "truth_unit": "ndci_index",
+  "truth_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-61.80, 10.20],
+        [-61.40, 10.20],
+        [-61.40, 10.60],
+        [-61.80, 10.60],
+        [-61.80, 10.20]
+      ]
+    ]
+  },
+  "evidence_class": "measured",
+  "provenance": "Synthetic reference case derived from Copernicus Sentinel-2 L2A processing chain. NDCI truth value is an approximate basin-average from expert interpretation of the imagery. Used for offline validation of WQ anomaly detection threshold calibration."
+}

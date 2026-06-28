@@ -1,0 +1,29 @@
+{
+  "id": "tobago_choke_points_2024",
+  "domain": "hydro_chokepoints",
+  "event_name": "Tobago DEM choke point survey 2024",
+  "refs": {
+    "dem_source": "cop_glo30",
+    "product_id": "Copernicus_DSM_COG_10_N11_00_W061_00_DEM",
+    "bbox": [-61.0, 11.0, -60.3, 11.5],
+    "resolution_m": 30
+  },
+  "event_time": "2024-01-01T00:00:00Z",
+  "obs_type": "choke_point",
+  "truth_n_choke_points_min": 1,
+  "truth_max_constriction_score_min": 0.5,
+  "evidence_class": "inferred",
+  "truth_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-61.0, 11.0],
+        [-60.3, 11.0],
+        [-60.3, 11.5],
+        [-61.0, 11.5],
+        [-61.0, 11.0]
+      ]
+    ]
+  },
+  "provenance": "Reference case for D4 choke point detection on Tobago. Truth derived from Copernicus GLO-30 DEM (30 m resolution). At least one hydrological constriction with score ≥ 0.5 expected based on Tobago's mountainous terrain. Used for offline validation of the HydroChokepointsDomain analyzer."
+}

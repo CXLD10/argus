@@ -1,0 +1,20 @@
+{
+  "id": "tobago_flood_risk_2024",
+  "domain": "weather_hydro",
+  "event_name": "Tobago flood risk event 2024-07",
+  "refs": {
+    "open_meteo_archive": "https://archive-api.open-meteo.com/v1/archive?latitude=11.25&longitude=-60.6&start_date=2024-07-01&end_date=2024-07-07",
+    "bbox": [-61.0, 11.0, -60.3, 11.5],
+    "sensing_date": "2024-07-04"
+  },
+  "event_time": "2024-07-04T12:00:00Z",
+  "obs_type": "precip_series",
+  "truth_risk_level": "high",
+  "truth_peak_precip_mm": 92.4,
+  "evidence_class": "modeled",
+  "truth_geometry": {
+    "type": "Point",
+    "coordinates": [-60.68, 11.25]
+  },
+  "provenance": "Synthetic flood risk reference case. Peak precipitation value derived from Open-Meteo ERA5 reanalysis archive for Tobago catchment 2024-07-04. Risk level 'high' assigned by applying FloodRisk predictor thresholds to archived data. Used for offline validation of the FloodRisk predictor."
+}

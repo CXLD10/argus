@@ -185,11 +185,11 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 
 | ID | Feature | Status | Owner | Notes |
 |---|---|---|---|---|
-| F-052 | End-to-end integration tests (all 4 domains) | TODO | — | dep all phases |
-| F-053 | Performance profiling (< 10min/AOI target) | TODO | — | dep F-052 |
+| F-052 | End-to-end integration tests (all 4 domains) | DONE | — | 92 tests, all pass; commit 03cf9af |
+| F-053 | Performance profiling (< 10min/AOI target) | DONE | — | all stages pass; docs/status/performance_baseline.md |
 | F-054 | Documentation finalization (USER_GUIDE, API_SPEC, DEPLOYMENT) | DONE | — | completed in doc sprint (Session 13) |
-| F-055 | Demo dataset preparation (all 4 domain eval cases) | TODO | — | fixtures.ts exists; needs wiring as API fallback |
-| F-056 | MVP validation checklist + Josh sign-off — **CP-4 = MVP** | TODO | — | dep F-052–F-055 |
+| F-055 | Demo dataset preparation (all 4 domain eval cases) | DONE | — | 4 eval cases in data/eval/; docs/status/eval_results.md |
+| F-056 | MVP validation checklist + Josh sign-off — **CP-4 = MVP** | IN_REVIEW | — | docs/status/mvp_checklist.md awaits Josh sign-off |
 
 ---
 
@@ -198,6 +198,18 @@ Detailed specs: [`docs/features/phase-11.md`](docs/features/phase-11.md)
 > Append a short entry every session. Newest on top.
 
 ```
+### 2026-06-29 — Phase 11 QA (F-052 / F-053 / F-055 / F-056)
+- Did:
+  - F-052: tests/integration/test_e2e_oil.py (21 tests), test_e2e_wq.py (16), test_e2e_ai.py (21), test_e2e_full.py (34) — 92 integration tests total; all pass
+  - F-052: scripts/harness/run_integration.sh (harness entry point)
+  - F-053: scripts/benchmark/run_benchmark.py + run_benchmark.sh; docs/status/performance_baseline.md — all 9 stages pass, full AOI run 0.96s vs 600s target
+  - F-055: data/eval/gulf_paria_wq_2024.json, tobago_flood_risk_2024.json, tobago_choke_points_2024.json — 4 eval cases total (tobago_2024 already existed); docs/status/eval_results.md
+  - F-056: docs/status/mvp_checklist.md — all 10 parts drafted; awaiting Josh sign-off
+- State: F-052/053/055 DONE (ACs pass). F-056 IN_REVIEW (checklist ready; sign-off pending). 92 integration + 1072 unit tests all green.
+- Git: main, commit 03cf9af (F-052); F-053/055/056 uncommitted at session end
+- Quota: 0 (fully offline; no CDSE or Open-Meteo calls)
+- Next: Josh reviews mvp_checklist.md, signs off F-056; apply v1.0.0 tag + GitHub release
+
 ### YYYY-MM-DD — <agent> — <feature ids>
 - Did: <what landed + file paths>
 - State: <acceptance criteria pass/fail; tests green?>

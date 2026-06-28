@@ -1266,3 +1266,17 @@ Zero.
 - Documentation analysis complete; no files written to repository
 - Repository was flat-root layout with broken cross-references
 - No code, no tests, no docs/ directory
+
+## 2026-06-29 — Phase 11 QA Session (F-052/F-053/F-055/F-056)
+
+- **F-052 DONE**: 92 integration tests across 4 files + harness script. All pass.
+  - test_e2e_oil.py (21): D1 detect→trajectory→impact→alert→API
+  - test_e2e_wq.py (16): D2 analyze→anomaly→forecast→API
+  - test_e2e_ai.py (21): AI grounded report + NL query (offline, VAL-005/012)
+  - test_e2e_full.py (34): all 4 domains + VAL-001/002/004-008/010/012/013/017/019/020
+  - scripts/harness/run_integration.sh: entry point
+- **F-053 DONE**: benchmark script + performance_baseline.md. All 9 stages pass (full AOI 0.96s).
+- **F-055 DONE**: 3 new eval cases (D2 WQ, D3 flood risk, D4 choke points); eval_results.md written.
+- **F-056 IN_REVIEW**: mvp_checklist.md created (10 parts, 50+ checks). Awaiting Josh sign-off.
+- Unit tests: 1072/1072 pass. No regressions.
+- Blockers: none. Next action: Josh reviews MVP checklist, signs off, v1.0.0 tag applied.
