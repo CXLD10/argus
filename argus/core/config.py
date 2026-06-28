@@ -97,10 +97,23 @@ class HydroChokepointsConfig(BaseModel):
     dem_source: str = "cop_glo30"
 
 
+class FloodRiskConfig(BaseModel):
+    """Thresholds for the rule-based FloodRisk predictor."""
+
+    precip_high_mm: float = 100.0
+    precip_extreme_mm: float = 200.0
+    discharge_high_m3s: float = 500.0
+    discharge_extreme_m3s: float = 2000.0
+    risk_score_medium: float = 0.25
+    risk_score_high: float = 0.50
+    risk_score_extreme: float = 0.75
+
+
 class DomainsConfig(BaseModel):
     hydro_chokepoints: HydroChokepointsConfig = Field(
         default_factory=HydroChokepointsConfig
     )
+    flood_risk: FloodRiskConfig = Field(default_factory=FloodRiskConfig)
 
 
 class Settings(BaseModel):
