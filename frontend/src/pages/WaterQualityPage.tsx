@@ -41,7 +41,7 @@ export function WaterQualityPage() {
   const anomalyCount = anomalyData?.items?.length ?? 0
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden page-enter">
       {/* Left: target list */}
       <div className="w-52 flex flex-col border-r border-slate-800 bg-slate-950">
         <div className="p-3 border-b border-slate-800">

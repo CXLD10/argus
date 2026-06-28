@@ -32,7 +32,7 @@ export function ChokePointsPage() {
   const latestFlood = floodData?.items?.[0] ?? null
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full page-enter">
       {/* Map */}
       <div className="relative flex-1 min-w-0">
         <ArgusMap

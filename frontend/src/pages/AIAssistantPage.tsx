@@ -18,7 +18,7 @@ export function AIAssistantPage() {
   const targetId = selectedTarget ?? wbData?.target_ids?.[0] ?? ''
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden page-enter">
       {/* Main chat area */}
       <div className="flex-1 flex flex-col overflow-hidden p-4 space-y-4">
         <div className="flex items-center gap-2">

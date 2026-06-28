@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchStatus, fetchObservations, fetchAOIs, fetchChokePoints, fetchFloodRisk } from '@/api/endpoints'
 import { MetricCard } from '@/components/ui/metric-card'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardSeparator } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RiskLevelBadge } from '@/components/domain/RiskLevelBadge'
 import { DomainStatusGrid } from '@/components/domain/DomainStatusGrid'
@@ -10,17 +10,18 @@ import { AIReportPanel } from '@/components/ai/AIReportPanel'
 import { useAOIStore } from '@/store/aoiStore'
 import { useEffect } from 'react'
 import { timeAgo } from '@/lib/utils'
-import { Droplets, CloudRain, Triangle, Bot, AlertTriangle, Activity } from 'lucide-react'
+import { Droplets, CloudRain, Triangle, Activity, AlertTriangle, ChevronRight } from 'lucide-react'
 import { ArgusMap } from '@/components/map/ArgusMap'
 import { LayerManager } from '@/components/map/LayerManager'
 import { useMapStore } from '@/store/mapStore'
+import { SkeletonMetricRow } from '@/components/ui/skeleton'
 import type { RiskLevel } from '@/api/types'
+import { cn } from '@/lib/utils'
 
 export function Overview() {
   const { selectedAOI, setSelectedAOI } = useAOIStore()
   const { activeLayers } = useMapStore()
 
-  // Bootstrap: select first active AOI
   const { data: aoiData } = useQuery({
     queryKey: ['aois'],
     queryFn: fetchAOIs,
@@ -63,134 +64,168 @@ export function Overview() {
   const wqCount    = obsData?.items?.filter((o) => ['chlorophyll_a','turbidity','cdom','surface_temp'].includes(o.obs_type)).length ?? 0
   const chokeCount = chokeData?.items?.length ?? 0
   const floodLevel = (floodData?.items?.[0]?.risk_level ?? null) as RiskLevel | null
+  const floodScore = floodData?.items?.[0]?.risk_score ?? null
 
   const allObs = obsData?.items ?? []
-
-  // Simulated recent alerts (derived from obs + predictions)
-  const recentAlerts = [
-    floodLevel && floodLevel !== 'low'
-      ? { id: 'f1', type: 'Flood Risk Increase', severity: floodLevel, time: '2h ago', aoi: selectedAOI?.name }
-      : null,
-    oilCount > 0
-      ? { id: 'o1', type: 'Oil Slick Detected', severity: 'medium' as RiskLevel, time: '4h ago', aoi: selectedAOI?.name }
-      : null,
-    wqCount > 0
-      ? { id: 'w1', type: 'High Chlorophyll Alert', severity: 'high' as RiskLevel, time: '6h ago', aoi: selectedAOI?.name }
-      : null,
-  ].filter(Boolean)
-
   const firstWaterBodyId = obsData?.items?.find((o) => o.target_id)?.target_id ?? null
 
+  const recentEvents = [
+    floodLevel && floodLevel !== 'low'
+      ? { id: 'f1', type: 'Flood Risk Elevated', level: floodLevel, time: '2h ago' }
+      : null,
+    oilCount > 0
+      ? { id: 'o1', type: `Oil Slick Detected (${oilCount})`, level: 'medium' as RiskLevel, time: '4h ago' }
+      : null,
+    wqCount > 0
+      ? { id: 'w1', type: 'High Chlorophyll Alert', level: 'high' as RiskLevel, time: '6h ago' }
+      : null,
+  ].filter(Boolean) as { id: string; type: string; level: RiskLevel; time: string }[]
+
+  const riskBorderClass: Record<RiskLevel, string> = {
+    extreme: 'risk-border-extreme',
+    high:    'risk-border-high',
+    medium:  'risk-border-medium',
+    low:     'risk-border-low',
+  }
+
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: map takes 60% */}
-      <div className="relative flex-1 min-w-0">
-        <ArgusMap
-          aoi={selectedAOI ?? undefined}
-          observations={allObs}
-          chokePoints={chokeData?.items ?? []}
-          activeLayers={activeLayers}
-          className="h-full"
-        />
-        <LayerManager />
-
-        {/* Bottom status overlay */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 pointer-events-none">
-          {statusData && (
-            <div className="glass rounded-lg px-3 py-1.5 flex items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <span className={`h-1.5 w-1.5 rounded-full ${statusData.store_accessible ? 'bg-green-400' : 'bg-red-400'}`} />
-                {statusData.store_accessible ? 'Store online' : 'Store offline'}
-              </span>
-              {statusData.last_analysis_run_at && (
-                <span>Last run {timeAgo(statusData.last_analysis_run_at)}</span>
-              )}
-              <span>v{statusData.version}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right panel: 380px */}
-      <div className="w-96 flex flex-col border-l border-slate-800 overflow-y-auto bg-slate-950">
-        <div className="p-4 space-y-4">
-          {/* KPI row */}
-          <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-col h-full overflow-hidden page-enter">
+      {/* ── KPI Bar ─────────────────────────────────────────────── */}
+      <div className="shrink-0 grid grid-cols-4 gap-3 px-4 pt-4 pb-3">
+        {obsLoading ? <SkeletonMetricRow /> : (
+          <>
             <MetricCard
               title="Oil Slick Detections"
               value={oilCount}
               icon={Droplets}
               iconColor="#f97316"
-              loading={obsLoading}
-              trend={{ value: '+12% last 7d', positive: true }}
+              trend={{ value: 'vs. 7d avg', direction: oilCount > 2 ? 'up' : 'flat', positive: false }}
             />
             <MetricCard
               title="WQ Alerts"
               value={wqCount}
               icon={Activity}
               iconColor="#3b82f6"
-              loading={obsLoading}
+              trend={{ value: 'Active observations', direction: 'flat' }}
             />
             <MetricCard
-              title="Flood Risk Areas"
-              value={floodLevel ? '1' : '0'}
+              title="Flood Risk"
+              value={floodLevel ? floodLevel.toUpperCase() : 'CLEAR'}
               icon={CloudRain}
-              iconColor="#38bdf8"
-              subtitle={floodLevel ? `Level: ${floodLevel}` : 'No active risk'}
+              iconColor={floodLevel === 'extreme' ? '#ef4444' : floodLevel === 'high' ? '#f97316' : '#38bdf8'}
+              subtitle={floodScore != null ? `Score: ${floodScore.toFixed(3)}` : undefined}
             />
             <MetricCard
               title="Choke Points"
               value={chokeCount}
               icon={Triangle}
               iconColor="#a78bfa"
-              subtitle="Monitored"
+              subtitle="Flow constrictions"
             />
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Recent Alerts */}
+      {/* ── Map + Right Panel ────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0 gap-3 px-4 pb-4">
+        {/* Map */}
+        <div className="relative flex-1 min-w-0 rounded-xl overflow-hidden border border-[#1e293b]">
+          <ArgusMap
+            aoi={selectedAOI ?? undefined}
+            observations={allObs}
+            chokePoints={chokeData?.items ?? []}
+            activeLayers={activeLayers}
+            className="h-full w-full"
+          />
+          <LayerManager />
+
+          {/* Map footer HUD */}
+          <div className="map-hud bottom-3 left-3 right-3 flex items-center justify-between">
+            <div className="glass rounded-lg px-2.5 py-1.5 flex items-center gap-3">
+              {statusData && (
+                <>
+                  <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <span className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      statusData.store_accessible ? 'bg-green-400' : 'bg-red-400'
+                    )} />
+                    {statusData.store_accessible ? 'Online' : 'Offline'}
+                  </span>
+                  {statusData.last_analysis_run_at && (
+                    <span className="text-[11px] text-slate-600">
+                      Last run {timeAgo(statusData.last_analysis_run_at)}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="map-coord-display">
+              {selectedAOI?.name ?? 'No AOI selected'}
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div className="w-[340px] shrink-0 flex flex-col gap-3 overflow-y-auto">
+          {/* Recent Events */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Alerts</CardTitle>
-                <button className="text-[11px] text-blue-400 hover:text-blue-300">View all →</button>
+                <CardTitle>Live Events</CardTitle>
+                <button
+                  className="flex items-center gap-0.5 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+                  aria-label="View all alerts"
+                >
+                  All alerts <ChevronRight className="h-3 w-3" />
+                </button>
               </div>
             </CardHeader>
-            <CardContent>
-              {recentAlerts.length === 0 ? (
-                <p className="text-xs text-slate-500 py-2">No active alerts.</p>
+            <CardContent className="pt-1 space-y-0">
+              {recentEvents.length === 0 ? (
+                <p className="text-xs text-slate-600 py-3 text-center">No active events.</p>
               ) : (
-                <div className="space-y-2">
-                  {recentAlerts.map((alert) => alert && (
-                    <div key={alert.id} className="flex items-start gap-2.5 py-1.5 border-b border-slate-800 last:border-0">
-                      <AlertTriangle
-                        className="h-3.5 w-3.5 mt-0.5 shrink-0"
-                        style={{ color: alert.severity === 'extreme' || alert.severity === 'high' ? '#ef4444' : '#f59e0b' }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-slate-200 leading-tight">{alert.type}</p>
-                        <p className="text-[10px] text-slate-500">{alert.aoi} · {alert.time}</p>
-                      </div>
-                      <RiskLevelBadge level={alert.severity} />
+                recentEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 -mx-4 first:border-t border-b border-slate-800/60',
+                      'hover:bg-[#141d2e] transition-colors cursor-pointer',
+                      riskBorderClass[event.level],
+                    )}
+                  >
+                    <AlertTriangle
+                      className="h-3.5 w-3.5 shrink-0"
+                      style={{
+                        color: event.level === 'extreme' || event.level === 'high'
+                          ? '#ef4444' : event.level === 'medium' ? '#f59e0b' : '#22c55e'
+                      }}
+                      aria-hidden="true"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-200 leading-tight">{event.type}</p>
+                      <p className="text-[10px] text-slate-600 mt-0.5">{event.time}</p>
                     </div>
-                  ))}
-                </div>
+                    <RiskLevelBadge level={event.level} />
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>
 
-          {/* AI Situation Summary */}
+          {/* AI Brief */}
           {firstWaterBodyId ? (
             <AIReportPanel targetId={firstWaterBodyId} />
           ) : (
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Bot className="h-3.5 w-3.5 text-blue-400" />AI Situation Summary</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-xs text-slate-500">Run a domain to generate the first AI report.</p>
-              </CardContent>
+              <div className="px-4 py-5 text-center">
+                <p className="text-xs text-slate-600">
+                  Run the inland_wq domain to enable AI situation reports.
+                </p>
+              </div>
             </Card>
           )}
 
-          {/* System Health */}
+          {/* System Health — compact */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -205,41 +240,23 @@ export function Overview() {
             <CardContent>
               <DomainStatusGrid />
               {statusData && (
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 space-y-2.5">
                   <QuotaGauge
                     used={statusData.quota.cdse_bytes_today}
                     limit={statusData.quota.cdse_daily_limit_gb * 1e9}
-                    label="CDSE Daily Quota"
+                    label="CDSE Bandwidth"
                     unit="bytes"
                   />
                   <QuotaGauge
                     used={statusData.open_meteo_calls_today}
                     limit={10_000}
-                    label="Open-Meteo Calls"
+                    label="Open-Meteo API"
                     unit="calls"
                   />
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* Predictions sidebar */}
-          {floodData && floodData.items.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle>Predictions (Next 7d)</CardTitle></CardHeader>
-              <CardContent>
-                {floodData.items.slice(0, 3).map((pred) => (
-                  <div key={pred.id} className="flex items-center justify-between py-1.5 border-b border-slate-800 last:border-0">
-                    <div>
-                      <p className="text-xs font-medium text-slate-200">{pred.predictor_id}</p>
-                      <p className="text-[10px] text-slate-500">{selectedAOI?.name}</p>
-                    </div>
-                    <RiskLevelBadge level={pred.risk_level} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>

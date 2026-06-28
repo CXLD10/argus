@@ -42,7 +42,7 @@ export function HydroPage() {
   const latestAcid  = acidData?.items?.[0] ?? null
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
+    <div className="h-full overflow-y-auto p-4 space-y-4 page-enter">
       <div className="flex items-center gap-2">
         <CloudRain className="h-4 w-4 text-sky-400" />
         <h2 className="text-sm font-semibold text-slate-200">Weather &amp; Hydrology</h2>

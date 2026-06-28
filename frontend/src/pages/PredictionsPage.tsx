@@ -44,7 +44,7 @@ export function PredictionsPage() {
   const currentFrame = frames[frameIdx] ?? null
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full page-enter">
       {/* Trajectory map */}
       <div className="relative flex-1 min-w-0">
         <ArgusMap

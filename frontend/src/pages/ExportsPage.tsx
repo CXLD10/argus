@@ -57,7 +57,7 @@ export function ExportsPage() {
   ]
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
+    <div className="h-full overflow-y-auto p-4 space-y-4 page-enter">
       <div className="flex items-center gap-2">
         <FileDown className="h-4 w-4 text-slate-400" />
         <h2 className="text-sm font-semibold text-slate-200">Reports &amp; Exports</h2>

@@ -31,7 +31,7 @@ export function OilMonitoringPage() {
   const slicks = obsData?.items ?? []
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full page-enter">
       {/* Map panel */}
       <div className="relative flex-1 min-w-0">
         <ArgusMap

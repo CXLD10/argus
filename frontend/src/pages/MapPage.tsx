@@ -23,7 +23,7 @@ export function MapPage() {
   })
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full page-enter">
       <ArgusMap
         aoi={selectedAOI ?? undefined}
         observations={obsData?.items ?? []}
